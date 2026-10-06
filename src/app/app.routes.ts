@@ -1,13 +1,14 @@
 import { Routes } from '@angular/router';
+import { roleGuard } from './core/auth.service';
 
 export const routes: Routes = [
-  { path: 'owner/dashboard', loadComponent: () => import('./pages/dashboard.component').then((m) => m.DashboardComponent) },
-  { path: 'owner/customers', loadComponent: () => import('./pages/customers.component').then((m) => m.CustomersComponent) },
-  { path: 'owner/orders', loadComponent: () => import('./pages/orders.component').then((m) => m.OrdersComponent) },
-  { path: 'owner/delivery', loadComponent: () => import('./pages/delivery.component').then((m) => m.DeliveryComponent) },
-  { path: 'owner/route-planning', loadComponent: () => import('./pages/route-planning.component').then((m) => m.RoutePlanningComponent) },
-  { path: 'owner/history', loadComponent: () => import('./pages/history.component').then((m) => m.HistoryComponent) },
-  { path: 'rider', loadComponent: () => import('./pages/rider.component').then((m) => m.RiderComponent) },
-  { path: '', pathMatch: 'full', redirectTo: 'owner/dashboard' },
-  { path: '**', redirectTo: 'owner/dashboard' },
+  { path: 'login', title: 'เข้าสู่ระบบ | ครัวเที่ยงตรง', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
+  { path: 'owner/customers', canActivate: [roleGuard('OWNER')], title: 'จัดการลูกค้า | ครัวเที่ยงตรง', loadComponent: () => import('./pages/customers/customers.component').then((m) => m.CustomersComponent) },
+  { path: 'owner/orders', canActivate: [roleGuard('OWNER')], title: 'จัดการออเดอร์ | ครัวเที่ยงตรง', loadComponent: () => import('./pages/orders/orders.component').then((m) => m.OrdersComponent) },
+  { path: 'owner/delivery', canActivate: [roleGuard('OWNER')], title: 'วางแผนจัดส่ง | ครัวเที่ยงตรง', loadComponent: () => import('./pages/delivery/delivery.component').then((m) => m.DeliveryComponent) },
+  { path: 'owner/riders', canActivate: [roleGuard('OWNER')], title: 'จัดการไรเดอร์ | ครัวเที่ยงตรง', loadComponent: () => import('./pages/riders/riders.component').then((m) => m.RidersComponent) },
+  { path: 'owner/settings', canActivate: [roleGuard('OWNER')], title: 'ตั้งค่าร้าน | ครัวเที่ยงตรง', loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent) },
+  { path: 'rider', canActivate: [roleGuard('RIDER')], title: 'ใบงานไรเดอร์ | ครัวเที่ยงตรง', loadComponent: () => import('./pages/rider/rider.component').then((m) => m.RiderComponent) },
+  { path: '', pathMatch: 'full', redirectTo: 'owner/orders' },
+  { path: '**', redirectTo: 'owner/orders' },
 ];

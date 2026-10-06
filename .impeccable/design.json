@@ -1,87 +1,209 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-20T06:33:45Z",
+  "generatedAt": "2026-09-27T22:01:45+07:00",
   "title": "Design System: ระบบจัดเส้นทางและแบ่งงานไรเดอร์อัจฉริยะ",
   "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "ฟ้ากระดาษปฏิบัติการ",
+        "canonical": "#f8faff",
+        "tonalRamp": ["color-mix(in srgb, #f8faff 70%, black)", "color-mix(in srgb, #f8faff 82%, black)", "color-mix(in srgb, #f8faff 92%, black)", "#f8faff", "color-mix(in srgb, #f8faff 88%, white)", "color-mix(in srgb, #f8faff 72%, white)", "color-mix(in srgb, #f8faff 48%, white)", "color-mix(in srgb, #f8faff 20%, white)"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "ขาวพื้นผิว",
+        "canonical": "#ffffff",
+        "tonalRamp": ["color-mix(in srgb, #ffffff 70%, black)", "color-mix(in srgb, #ffffff 82%, black)", "color-mix(in srgb, #ffffff 92%, black)", "#ffffff", "color-mix(in srgb, #ffffff 88%, white)", "color-mix(in srgb, #ffffff 72%, white)", "color-mix(in srgb, #ffffff 48%, white)", "color-mix(in srgb, #ffffff 20%, white)"]
+      },
+      "surface-subtle": {
+        "role": "neutral",
+        "displayName": "ฟ้าชั้นข้อมูล",
+        "canonical": "#f3f7ff",
+        "tonalRamp": ["color-mix(in srgb, #f3f7ff 70%, black)", "color-mix(in srgb, #f3f7ff 82%, black)", "color-mix(in srgb, #f3f7ff 92%, black)", "#f3f7ff", "color-mix(in srgb, #f3f7ff 88%, white)", "color-mix(in srgb, #f3f7ff 72%, white)", "color-mix(in srgb, #f3f7ff 48%, white)", "color-mix(in srgb, #f3f7ff 20%, white)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "หมึกหลัก",
+        "canonical": "#17171a",
+        "tonalRamp": ["color-mix(in srgb, #17171a 70%, black)", "color-mix(in srgb, #17171a 82%, black)", "#17171a", "color-mix(in srgb, #17171a 78%, white)", "color-mix(in srgb, #17171a 58%, white)", "color-mix(in srgb, #17171a 38%, white)", "color-mix(in srgb, #17171a 20%, white)", "color-mix(in srgb, #17171a 8%, white)"]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "หมึกอธิบาย",
+        "canonical": "#667085",
+        "tonalRamp": ["color-mix(in srgb, #667085 70%, black)", "color-mix(in srgb, #667085 82%, black)", "#667085", "color-mix(in srgb, #667085 78%, white)", "color-mix(in srgb, #667085 58%, white)", "color-mix(in srgb, #667085 38%, white)", "color-mix(in srgb, #667085 20%, white)", "color-mix(in srgb, #667085 8%, white)"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "เส้นแบ่งอ่อน",
+        "canonical": "#dbe3f1",
+        "tonalRamp": ["color-mix(in srgb, #dbe3f1 70%, black)", "color-mix(in srgb, #dbe3f1 82%, black)", "color-mix(in srgb, #dbe3f1 92%, black)", "#dbe3f1", "color-mix(in srgb, #dbe3f1 80%, white)", "color-mix(in srgb, #dbe3f1 60%, white)", "color-mix(in srgb, #dbe3f1 35%, white)", "color-mix(in srgb, #dbe3f1 12%, white)"]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "เส้นแบ่งชัด",
+        "canonical": "#b9c8df",
+        "tonalRamp": ["color-mix(in srgb, #b9c8df 70%, black)", "color-mix(in srgb, #b9c8df 82%, black)", "color-mix(in srgb, #b9c8df 92%, black)", "#b9c8df", "color-mix(in srgb, #b9c8df 80%, white)", "color-mix(in srgb, #b9c8df 60%, white)", "color-mix(in srgb, #b9c8df 35%, white)", "color-mix(in srgb, #b9c8df 12%, white)"]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "น้ำเงินเที่ยงตรง",
+        "canonical": "#0053fd",
+        "tonalRamp": ["color-mix(in srgb, #0053fd 70%, black)", "color-mix(in srgb, #0053fd 82%, black)", "color-mix(in srgb, #0053fd 92%, black)", "#0053fd", "color-mix(in srgb, #0053fd 78%, white)", "color-mix(in srgb, #0053fd 55%, white)", "color-mix(in srgb, #0053fd 30%, white)", "color-mix(in srgb, #0053fd 12%, white)"]
+      },
+      "primary-hover": {
+        "role": "primary",
+        "displayName": "น้ำเงินเที่ยงตรงเข้ม",
+        "canonical": "#003fc7",
+        "tonalRamp": ["color-mix(in srgb, #003fc7 70%, black)", "color-mix(in srgb, #003fc7 82%, black)", "color-mix(in srgb, #003fc7 92%, black)", "#003fc7", "color-mix(in srgb, #003fc7 78%, white)", "color-mix(in srgb, #003fc7 55%, white)", "color-mix(in srgb, #003fc7 30%, white)", "color-mix(in srgb, #003fc7 12%, white)"]
+      },
+      "info-soft": {
+        "role": "secondary",
+        "displayName": "ฟ้าข้อมูลอ่อน",
+        "canonical": "#eaf1ff",
+        "tonalRamp": ["color-mix(in srgb, #eaf1ff 70%, black)", "color-mix(in srgb, #eaf1ff 82%, black)", "color-mix(in srgb, #eaf1ff 92%, black)", "#eaf1ff", "color-mix(in srgb, #eaf1ff 80%, white)", "color-mix(in srgb, #eaf1ff 60%, white)", "color-mix(in srgb, #eaf1ff 35%, white)", "color-mix(in srgb, #eaf1ff 12%, white)"]
+      },
+      "success-soft": {
+        "role": "secondary",
+        "displayName": "เขียวพร้อมส่งอ่อน",
+        "canonical": "#e8f7f0",
+        "tonalRamp": ["color-mix(in srgb, #e8f7f0 70%, black)", "color-mix(in srgb, #e8f7f0 82%, black)", "color-mix(in srgb, #e8f7f0 92%, black)", "#e8f7f0", "color-mix(in srgb, #e8f7f0 80%, white)", "color-mix(in srgb, #e8f7f0 60%, white)", "color-mix(in srgb, #e8f7f0 35%, white)", "color-mix(in srgb, #e8f7f0 12%, white)"]
+      },
+      "success-text": {
+        "role": "secondary",
+        "displayName": "เขียวพร้อมส่ง",
+        "canonical": "#16865c",
+        "tonalRamp": ["color-mix(in srgb, #16865c 70%, black)", "color-mix(in srgb, #16865c 82%, black)", "color-mix(in srgb, #16865c 92%, black)", "#16865c", "color-mix(in srgb, #16865c 78%, white)", "color-mix(in srgb, #16865c 55%, white)", "color-mix(in srgb, #16865c 30%, white)", "color-mix(in srgb, #16865c 12%, white)"]
+      },
+      "warning-soft": {
+        "role": "tertiary",
+        "displayName": "เหลืองจับตาเวลาอ่อน",
+        "canonical": "#fff5df",
+        "tonalRamp": ["color-mix(in srgb, #fff5df 70%, black)", "color-mix(in srgb, #fff5df 82%, black)", "color-mix(in srgb, #fff5df 92%, black)", "#fff5df", "color-mix(in srgb, #fff5df 80%, white)", "color-mix(in srgb, #fff5df 60%, white)", "color-mix(in srgb, #fff5df 35%, white)", "color-mix(in srgb, #fff5df 12%, white)"]
+      },
+      "warning-text": {
+        "role": "tertiary",
+        "displayName": "เหลืองจับตาเวลา",
+        "canonical": "#a45b00",
+        "tonalRamp": ["color-mix(in srgb, #a45b00 70%, black)", "color-mix(in srgb, #a45b00 82%, black)", "color-mix(in srgb, #a45b00 92%, black)", "#a45b00", "color-mix(in srgb, #a45b00 78%, white)", "color-mix(in srgb, #a45b00 55%, white)", "color-mix(in srgb, #a45b00 30%, white)", "color-mix(in srgb, #a45b00 12%, white)"]
+      },
+      "danger-soft": {
+        "role": "tertiary",
+        "displayName": "แดงต้องแก้ไขอ่อน",
+        "canonical": "#fff0f3",
+        "tonalRamp": ["color-mix(in srgb, #fff0f3 70%, black)", "color-mix(in srgb, #fff0f3 82%, black)", "color-mix(in srgb, #fff0f3 92%, black)", "#fff0f3", "color-mix(in srgb, #fff0f3 80%, white)", "color-mix(in srgb, #fff0f3 60%, white)", "color-mix(in srgb, #fff0f3 35%, white)", "color-mix(in srgb, #fff0f3 12%, white)"]
+      },
+      "danger-text": {
+        "role": "tertiary",
+        "displayName": "แดงต้องแก้ไข",
+        "canonical": "#c72e4d",
+        "tonalRamp": ["color-mix(in srgb, #c72e4d 70%, black)", "color-mix(in srgb, #c72e4d 82%, black)", "color-mix(in srgb, #c72e4d 92%, black)", "#c72e4d", "color-mix(in srgb, #c72e4d 78%, white)", "color-mix(in srgb, #c72e4d 55%, white)", "color-mix(in srgb, #c72e4d 30%, white)", "color-mix(in srgb, #c72e4d 12%, white)"]
+      }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "หัวข้อหลัก", "purpose": "งานปัจจุบัน ชื่อลูกค้า และหัวข้อที่ต้องเด่น" },
+      "title": { "displayName": "ชื่อหน้าและแผง", "purpose": "app shell, form และ panel title" },
+      "body": { "displayName": "ข้อความใช้งาน", "purpose": "ข้อความไทยหลักและคำอธิบาย" },
+      "label": { "displayName": "ป้ายกำกับ", "purpose": "metadata และสถานะย่อย" },
+      "metric": { "displayName": "ตัวเลขปฏิบัติการ", "purpose": "เวลา จำนวน ระยะทาง เงิน และรหัสใบงาน" }
+    },
     "shadows": [
-      { "name": "dialog", "value": "0 18px 50px rgba(0,0,0,.14)", "purpose": "Confirmation dialog only." },
-      { "name": "map-popup", "value": "0 2px 8px rgba(0,0,0,.04)", "purpose": "Leaflet popup only." }
+      { "name": "panel-ambient", "value": "0 1px 2px rgb(29 49 86 / .04)", "purpose": "แยกการ์ดขาวจากพื้นหลังเพียงเล็กน้อย" },
+      { "name": "map-control", "value": "0 8px 22px rgb(38 56 88 / .10)", "purpose": "เครื่องมือที่ลอยอยู่เหนือแผนที่" },
+      { "name": "map-popup", "value": "0 12px 28px rgb(29 49 86 / .16)", "purpose": "popup ที่ลอยอยู่เหนือแผนที่" },
+      { "name": "location-pin", "value": "0 3px 9px rgb(23 23 26 / .28)", "purpose": "แยกหมุดออกจากรายละเอียดแผนที่" },
+      { "name": "legacy-rider-completion", "value": "4px 4px 9px rgba(51,65,85,.32), -4px -4px 9px rgba(255,255,255,.72)", "purpose": "ข้อยกเว้นเดิมของปุ่มส่งสำเร็จ; ห้ามนำกลับมาใช้เป็น pattern" }
     ],
     "motion": [
-      { "name": "button-state", "value": "150–200ms ease", "purpose": "Button press and color changes; reduced-motion media query overrides it." },
-      { "name": "reveal", "value": "600ms cubic-bezier(.16, 1, .3, 1)", "purpose": "Entrance reveal; reduced-motion media query overrides it." }
+      { "name": "state-transition", "value": "200ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "การเปลี่ยนสี ขอบ และการตอบสนองของปุ่ม" },
+      { "name": "reduced-motion", "value": "0.01ms", "purpose": "แทน transition และ animation ที่ไม่จำเป็นเมื่อผู้ใช้ขอลดการเคลื่อนไหว" }
     ],
     "breakpoints": [
-      { "name": "owner-nav-bottom", "value": "900px" },
-      { "name": "result-stack", "value": "1050px" },
-      { "name": "rider-full-screen", "value": "500px" }
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
     ]
   },
   "components": [
     {
-      "name": "Primary Button",
+      "name": "ปุ่มหลัก",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Primary owner or rider action.",
-      "html": "<button class=\"ds-btn-primary\">คำนวณเส้นทาง</button>",
-      "css": ".ds-btn-primary{min-height:44px;padding:10px 16px;border:1px solid transparent;border-radius:8px;background:#174b3d;color:#fff;font:700 14px 'Noto Sans Thai',Tahoma,sans-serif;cursor:pointer;transition:background-color 200ms ease,transform 150ms ease}.ds-btn-primary:hover{background:#24624f}.ds-btn-primary:active{transform:scale(.98)}.ds-btn-primary:focus-visible{outline:2px solid #20211f;outline-offset:2px}"
+      "description": "การกระทำหลักหนึ่งรายการของหน้าหรือขั้นตอนปัจจุบัน",
+      "html": "<button class=\"ds-btn-primary\">คำนวณและจัดกลุ่มเส้นทาง</button>",
+      "css": ".ds-btn-primary{min-height:44px;padding:10px 20px;border:1px solid #1d4ed8;border-radius:12px;background:#0053fd;color:#fff;font:700 16px/1.5 'Bai Jamjuree','Noto Sans Thai',sans-serif;cursor:pointer;transition:background-color 200ms cubic-bezier(.4,0,.2,1),transform 200ms cubic-bezier(.4,0,.2,1)}.ds-btn-primary:hover{background:#003fc7}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:2px solid #2563eb;outline-offset:2px}"
     },
     {
-      "name": "Secondary Button",
+      "name": "ปุ่มรอง",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Cancel or lower-priority action.",
+      "description": "ยกเลิก เปรียบเทียบ หรือการกระทำที่มีลำดับรอง",
       "html": "<button class=\"ds-btn-secondary\">ยกเลิก</button>",
-      "css": ".ds-btn-secondary{min-height:44px;padding:10px 16px;border:1px solid #d9d8d4;border-radius:8px;background:#fff;color:#20211f;font:700 14px 'Noto Sans Thai',Tahoma,sans-serif;cursor:pointer;transition:background-color 200ms ease}.ds-btn-secondary:hover{background:#f7f6f3}.ds-btn-secondary:focus-visible{outline:2px solid #20211f;outline-offset:2px}"
+      "css": ".ds-btn-secondary{min-height:44px;padding:10px 16px;border:1px solid #b9c8df;border-radius:12px;background:#fff;color:#17171a;font:700 16px/1.5 'Bai Jamjuree','Noto Sans Thai',sans-serif;cursor:pointer;transition:background-color 200ms cubic-bezier(.4,0,.2,1),border-color 200ms cubic-bezier(.4,0,.2,1),color 200ms cubic-bezier(.4,0,.2,1)}.ds-btn-secondary:hover{border-color:#93c5fd;background:#f3f7ff;color:#1d4ed8}.ds-btn-secondary:active{transform:translateY(1px)}.ds-btn-secondary:focus-visible{outline:2px solid #2563eb;outline-offset:2px}"
     },
     {
-      "name": "Text Input",
+      "name": "ช่องกรอกข้อความ",
       "kind": "input",
       "refersTo": "input",
-      "description": "Search and form field.",
-      "html": "<label class=\"ds-field\">ค้นหาลูกค้า<input class=\"ds-input\" placeholder=\"ค้นหาชื่อหรือเบอร์โทร\"></label>",
-      "css": ".ds-field{display:grid;gap:6px;color:#20211f;font:600 13px 'Noto Sans Thai',Tahoma,sans-serif}.ds-input{min-height:44px;padding:10px 12px;border:1px solid #d9d8d4;border-radius:8px;background:#fff;color:#20211f;font:400 14px 'Noto Sans Thai',Tahoma,sans-serif}.ds-input:focus-visible{outline:2px solid #20211f;outline-offset:2px}"
+      "description": "ช่องค้นหาและกรอกข้อมูลที่อ่านง่ายบนเดสก์ท็อปและมือถือ",
+      "html": "<label class=\"ds-field\">ค้นหาลูกค้า<input class=\"ds-input\" placeholder=\"ชื่อ เบอร์โทร หรือที่อยู่\"></label>",
+      "css": ".ds-field{display:grid;gap:6px;color:#17171a;font:600 14px/1.5 'Bai Jamjuree','Noto Sans Thai',sans-serif}.ds-input{box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid #b9c8df;border-radius:12px;background:#fff;color:#17171a;font:400 16px/1.5 'Bai Jamjuree','Noto Sans Thai',sans-serif;caret-color:#0053fd}.ds-input::placeholder{color:#667085}.ds-input:focus-visible{border-color:#2563eb;outline:0;box-shadow:0 0 0 3px rgb(0 83 253 / .12)}"
     },
     {
-      "name": "Success Status",
+      "name": "ชิปสถานะพร้อม",
       "kind": "chip",
       "refersTo": "status-success",
-      "description": "Readable status with text and a symbol, not color alone.",
-      "html": "<span class=\"ds-status-success\">✓ มีตำแหน่งแล้ว</span>",
-      "css": ".ds-status-success{display:inline-block;padding:5px 10px;border-radius:999px;background:#edf3ec;color:#346538;font:700 12px 'Noto Sans Thai',Tahoma,sans-serif}"
+      "description": "สถานะสำเร็จหรือพร้อมที่มีข้อความกำกับ ไม่ใช้สีเพียงอย่างเดียว",
+      "html": "<span class=\"ds-status-success\">✓ ปักตำแหน่งแล้ว</span>",
+      "css": ".ds-status-success{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:#e8f7f0;color:#16865c;font:600 12px/1.5 'Bai Jamjuree','Noto Sans Thai',sans-serif}"
     },
     {
-      "name": "Surface Card",
+      "name": "การ์ดข้อมูลปฏิบัติการ",
       "kind": "card",
       "refersTo": "card",
-      "description": "Quiet bordered container for operational information.",
-      "html": "<section class=\"ds-card\"><strong>การจัดส่งวันนี้</strong><p>26 ออเดอร์</p></section>",
-      "css": ".ds-card{padding:24px;border:1px solid #eaeaea;border-radius:12px;background:#fff;color:#20211f;font-family:'Noto Sans Thai',Tahoma,sans-serif}.ds-card strong{font-size:17px}.ds-card p{margin:8px 0 0;color:#787774;font-size:13px}"
+      "description": "พื้นผิวหลักสำหรับ KPI รายการ และกลุ่มข้อมูลที่ต้องอ่านเร็ว",
+      "html": "<section class=\"ds-card\"><span class=\"ds-card-label\">กล่องที่รอส่ง</span><strong class=\"ds-card-value\">26</strong><small class=\"ds-card-note\">พร้อมจัดเส้นทาง</small></section>",
+      "css": ".ds-card{padding:20px;border:1px solid #dbe3f1;border-radius:16px;background:#fff;color:#17171a;box-shadow:0 1px 2px rgb(29 49 86 / .04);font-family:'Bai Jamjuree','Noto Sans Thai',sans-serif}.ds-card-label{display:block;color:#667085;font-size:14px}.ds-card-value{display:block;margin-top:4px;font:600 30px/1.25 'JetBrains Mono','Cascadia Mono',monospace}.ds-card-note{display:block;margin-top:4px;color:#667085;font-size:12px}"
     },
     {
-      "name": "Owner Navigation Item",
+      "name": "รายการนำทางเจ้าของร้าน",
       "kind": "nav",
-      "description": "Active item in the owner navigation.",
-      "html": "<nav><a class=\"ds-nav-item\" href=\"#\" aria-current=\"page\">หน้าหลัก</a></nav>",
-      "css": ".ds-nav-item{display:flex;align-items:center;min-height:42px;padding:8px 12px;border-radius:7px;background:#edf3ec;color:#346538;font:700 13px 'Noto Sans Thai',Tahoma,sans-serif;text-decoration:none}.ds-nav-item:hover{background:#f7f6f3;color:#20211f}.ds-nav-item:focus-visible{outline:2px solid #20211f;outline-offset:2px}"
+      "description": "รายการหน้าปัจจุบันใน sidebar พร้อมไอคอนและข้อความ",
+      "html": "<nav class=\"ds-nav\" aria-label=\"งานของร้าน\"><a class=\"ds-nav-item\" href=\"#\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Zm0 0V3m6 18V6\"/></svg><span>ศูนย์จัดส่ง</span></a></nav>",
+      "css": ".ds-nav{padding:8px;background:#f3f7ff}.ds-nav-item{display:flex;min-height:44px;align-items:center;gap:12px;padding:0 12px;border:1px solid #dbe3f1;border-radius:8px;background:#fff;color:#0053fd;font:600 14px/1.5 'Bai Jamjuree','Noto Sans Thai',sans-serif;text-decoration:none}.ds-nav-item svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.ds-nav-item:hover{background:#eaf1ff}.ds-nav-item:focus-visible{outline:2px solid #2563eb;outline-offset:2px}"
     }
   ],
   "narrative": {
     "northStar": "มื้อเที่ยงที่จัดการได้ทัน",
-    "overview": "หน้าจอภาษาไทยของร้านข้าวกล่องให้เจ้าของร้านเห็นสถานะ ความพร้อม และสิ่งที่ต้องทำต่อโดยไม่ต้องแปลศัพท์เทคนิค ภาพรวมเรียบ สว่าง เป็นมิตร และเป็นงานปฏิบัติการจริงมากกว่าแดชบอร์ดเชิงวิศวกรรม ฝั่งไรเดอร์ใช้จอมือถือที่เน้นงานของตนทีละจุด",
-    "keyCharacteristics": ["พื้นหลังอ่อนและการ์ดขาวมีเส้นขอบบาง", "ปุ่มหลักสีเขียวเข้ม", "ตัวเลขเวลา ระยะทาง และเงินเด่นพอให้กวาดตา", "ข้อความสถานะอยู่คู่กับสีเสมอ"],
+    "overview": "ระบบภาพนี้ทำหน้าที่เหมือนโต๊ะควบคุมงานก่อนเที่ยงที่สงบและอ่านขาด: เจ้าของร้านต้องกวาดตาแล้วรู้ทันทีว่างานพร้อมหรือยัง ต้องทำอะไรต่อ และยังทันเส้นตายหรือไม่ ส่วนไรเดอร์ต้องเห็นเฉพาะงานของตนทีละขั้นโดยไม่ถูกข้อมูลของร้านรบกวน ภาษาภาพจึงตรงไปตรงมา สว่าง และพร้อมปฏิบัติงาน มากกว่าการเป็นแดชบอร์ดเชิงวิศวกรรมหรือพื้นที่ตกแต่ง\n\nความโดดเด่นมาจากลำดับชั้นที่แม่นยำ ไม่ใช่ลูกเล่น: พื้นฟ้าอ่อนรองรับการ์ดขาว เส้นขอบบางแยกกลุ่มข้อมูล สีน้ำเงินเที่ยงตรงสงวนไว้สำหรับการกระทำหลัก และตัวเลขเวลา ระยะทาง จำนวนกล่อง และเงินใช้ตัวอักษร monospace เพื่ออ่านแยกจากข้อความไทยได้เร็ว",
+    "keyCharacteristics": [
+      "พื้นฟ้าอ่อนกับการ์ดขาวและเส้นขอบเทาฟ้าบาง",
+      "สีน้ำเงินเที่ยงตรงเป็นสีการกระทำหลักที่ใช้เท่าที่จำเป็น",
+      "ตัวเลขปฏิบัติการใช้ monospace และวางให้กวาดตาได้เร็ว",
+      "สีสถานะทุกสีมีข้อความหรือสัญลักษณ์กำกับ",
+      "หน้าจอเจ้าของร้านเน้นภาพรวม ส่วนหน้าจอไรเดอร์เน้นงานทีละจุด"
+    ],
     "rules": [
-      { "name": "The Meaning Before Color Rule", "body": "สถานะต้องมีข้อความหรือสัญลักษณ์ที่เข้าใจได้โดยไม่พึ่งสีเพียงอย่างเดียว", "section": "colors" },
-      { "name": "The Scannable Numbers Rule", "body": "เวลา จำนวนกล่อง ระยะทาง และกำไรต้องอ่านแยกจากคำอธิบายได้ทันที", "section": "typography" }
+      { "name": "กฎความหมายมาก่อนสี", "body": "สถานะต้องมีข้อความ ตัวเลข หรือสัญลักษณ์ที่เข้าใจได้โดยไม่พึ่งสีเพียงอย่างเดียว", "section": "colors" },
+      { "name": "กฎแยกสีงานออกจากสีคน", "body": "สีประจำไรเดอร์ใช้จับคู่เส้นทาง จุด และการ์ดเท่านั้น ห้ามนำไปใช้แทนสีปุ่มหรือสีสถานะของระบบ", "section": "colors" },
+      { "name": "กฎตัวเลขต้องกวาดตาได้", "body": "เวลา จำนวนกล่อง ระยะทาง และเงินต้องแยกออกจากคำอธิบายด้วย monospace หรือ tabular numerals และต้องไม่ซ่อนอยู่ในย่อหน้ายาว", "section": "typography" },
+      { "name": "กฎภาษาไทยนำ", "body": "ข้อความการทำงานใช้ภาษาไทยสั้นและตรง; ภาษาอังกฤษใช้เฉพาะคำเทคนิคหรือ metadata ที่ไม่รบกวนการตัดสินใจ", "section": "typography" },
+      { "name": "กฎงานหลักมาก่อนรายละเอียด", "body": "ปุ่มหรือสถานะที่กำหนดขั้นตอนถัดไปต้องอยู่ก่อนข้อมูลอธิบายเชิงเทคนิคเสมอ", "section": "layout" },
+      { "name": "กฎแบนเป็นค่าเริ่มต้น", "body": "ถ้าองค์ประกอบไม่ลอยเหนือแผนที่หรือ viewport ให้ใช้เส้นขอบหรือพื้นสีแทนเงา", "section": "elevation" }
     ],
     "dos": [
       "บอกสถานะและขั้นตอนถัดไปด้วยภาษาไทยสั้น ๆ โดยเฉพาะความพร้อมและเส้นตาย 12:30",
-      "ให้ปุ่มงานหลักเด่นและมีขนาดแตะได้บนมือถือ",
-      "ใช้สีเส้นทางของไรเดอร์ให้สอดคล้องกันระหว่างแผนที่กับการ์ด"
+      "ให้การกระทำหลักเด่นเพียงหนึ่งระดับและมีพื้นที่แตะอย่างน้อย 44px",
+      "ใช้สีเส้นทางของไรเดอร์ให้ตรงกันระหว่างแผนที่ หมายเลขจุด และการ์ด",
+      "จัดลำดับข้อมูลใหม่บนมือถือเพื่อให้เห็นงานปัจจุบันก่อนรายละเอียดรอง",
+      "ใช้ข้อความหรือสัญลักษณ์ร่วมกับสีทุกครั้งที่สื่อสถานะ"
     ],
     "donts": [
-      "ทำหน้าจอเป็นแผง debug หรือแสดงอัลกอริทึม, JSON และพิกัดเป็นข้อมูลหลัก",
-      "ให้ไรเดอร์เห็นบัญชีร้านหรือเส้นทางของคนอื่น",
+      "ทำหน้าจอเป็นแผง debug หรือยก JSON, พิกัด และคำอธิบายอัลกอริทึมขึ้นเป็นข้อมูลหลัก",
+      "อัด KPI, สี และปุ่มหลายระดับจนทุกอย่างแย่งความสนใจเท่ากัน",
+      "ใช้ gradient ตกแต่งหรือเงาหนักเพื่อสร้างความน่าสนใจ; ใช้ลำดับชั้น สีพื้น และเส้นขอบแทน",
+      "ให้ไรเดอร์เห็นบัญชีร้าน เส้นทางของผู้อื่น หรือ navigation ของเจ้าของร้าน",
       "สื่อสถานะด้วยสีหรือไอคอนอย่างเดียว"
     ]
   }

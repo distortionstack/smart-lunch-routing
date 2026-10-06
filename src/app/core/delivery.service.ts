@@ -1,21 +1,116 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { finalize, forkJoin, timeout } from 'rxjs';
+import { BackendApiService } from './backend-api.service';
 import { DEMO_CUSTOMERS, DEMO_ORDERS, DEMO_RIDERS } from './demo-data';
 import { Customer, Order, RiderRoute, RoutePlan, RouteStop, SHOP } from './models';
+import { ShopSettings, ShopSettingsApiService } from './shop-settings-api.service';
+import { RoutePlanApiService } from './route-plan-api.service';
+import { AuthService } from './auth.service';
 
 const CUSTOMER_KEY = 'smart-lunch-customers-v1';
-const ORDER_KEY = 'smart-lunch-orders-v1';
 const PLAN_KEY = 'smart-lunch-plan-v1';
 
 @Injectable({ providedIn: 'root' })
 export class DeliveryService {
-  readonly customers = signal<Customer[]>(this.load(CUSTOMER_KEY, DEMO_CUSTOMERS));
-  readonly orders = signal<Order[]>(this.load(ORDER_KEY, DEMO_ORDERS));
-  readonly riders = signal(DEMO_RIDERS);
-  readonly plan = signal<RoutePlan | null>(this.load<RoutePlan | null>(PLAN_KEY, null));
+  readonly customers = signal<Customer[]>([]);
+  readonly orders = signal<Order[]>([]);
+  readonly riders = signal<typeof DEMO_RIDERS>([]);
+  readonly plan = signal<RoutePlan | null>(null);
+  readonly connecting = signal(false);
+  readonly connectionError = signal('');
+  readonly confirmedPlan = signal<RoutePlan | null>(null);
+  readonly planHistory = signal<RoutePlan[]>([]);
   readonly pendingOrders = computed(() => this.orders().filter((order) => order.status === 'pending'));
+  readonly dispatchCustomers = computed(() => {
+    const customerIds = new Set(this.pendingOrders().map(order => order.customerId));
+    return this.customers().filter(customer => customerIds.has(customer.id));
+  });
   readonly pendingBoxes = computed(() => this.pendingOrders().reduce((sum, order) => sum + order.boxes, 0));
+  /** Only an API-confirmed snapshot is ready for dispatch. */
+  readonly usingBackend = signal(false);
+  /** ค่าตั้งร้านจาก backend (null = ยังโหลดไม่ได้ ใช้ค่า default เดียวกับ backend seed) */
+  readonly settings = signal<ShopSettings | null>(null);
+  readonly dataRevision = signal(0);
+  private readonly api = inject(BackendApiService, { optional: true });
+  private readonly settingsApi = inject(ShopSettingsApiService, { optional: true });
+  private readonly routePlans = inject(RoutePlanApiService, { optional: true });
+  private readonly auth = inject(AuthService, { optional: true });
+  private loadGeneration = 0;
+
+  private currentResponse(): () => boolean {
+    const generation = this.loadGeneration;
+    const token = this.auth?.token();
+    return () => generation === this.loadGeneration && token === this.auth?.token();
+  }
+
+  constructor() {
+    // Retire legacy order/plan caches; never restore orders or their snapshots from storage.
+    try { localStorage.removeItem('smart-lunch-orders-v1'); localStorage.removeItem(PLAN_KEY); }
+    catch { /* API data remains usable when storage is unavailable. */ }
+  }
+
+  /**
+   * Load one complete API snapshot; failed/partial loads cannot become dispatch data.
+   */
+  connect(refresh = false): void {
+    if (!this.api || (this.usingBackend() && !refresh)) return;
+    this.loadGeneration++;
+    const current = this.currentResponse();
+    this.connecting.set(true);
+    this.connectionError.set('');
+    forkJoin({
+      customers: this.api.listCustomers(),
+      orders: this.api.listOrders(),
+      riders: this.api.listRiders(),
+    }).pipe(timeout(15000), finalize(() => { if (current()) this.connecting.set(false); })).subscribe({ next: (data) => {
+      if (!current()) return;
+      this.customers.set(data.customers);
+      this.orders.set(data.orders);
+      this.riders.set(data.riders);
+      // A persisted local preview has no backend geometry or durable status.
+      // Load the saved backend plan afresh on the dispatch page instead.
+      this.plan.set(null);
+      this.confirmedPlan.set(null);
+      try { localStorage.removeItem(PLAN_KEY); } catch { /* browser storage unavailable */ }
+      this.usingBackend.set(true);
+      this.dataRevision.update(value => value + 1);
+    }, error: () => {
+      if (!current()) return;
+      this.customers.set([]);
+      this.orders.set([]);
+      this.riders.set([]);
+      this.plan.set(null);
+      this.confirmedPlan.set(null);
+      this.usingBackend.set(false);
+      this.connectionError.set('โหลดข้อมูลจัดส่งไม่สำเร็จ กรุณาลองเชื่อมต่ออีกครั้ง');
+      this.dataRevision.update(value => value + 1);
+    } });
+    // ค่าตั้งร้านแยกเส้นต่างหาก — พังก็แค่ใช้ default ไม่กระทบข้อมูลหลัก
+    this.settingsApi?.get().subscribe({
+      next: (settings) => { if (current()) this.settings.set(settings); },
+      error: (error) => console.warn('[delivery] โหลดค่าตั้งร้านไม่สำเร็จ ใช้ค่า default:', error),
+    });
+  }
 
   saveCustomer(input: Omit<Customer, 'id'> & { id?: string }): void {
+    if (this.usingBackend() && this.api) {
+      const current = this.currentResponse();
+      const payload = { name: input.name, phone: input.phone, address: input.address, lat: input.lat, lng: input.lng };
+      const request = input.id ? this.api.updateCustomer(input.id, payload) : this.api.createCustomer(payload);
+      request.subscribe({
+        next: (saved) => {
+          if (!current()) return;
+          this.customers.update((list) =>
+            input.id ? list.map((item) => (item.id === saved.id ? saved : item)) : [...list, saved],
+          );
+          this.persist(CUSTOMER_KEY, this.customers());
+          this.routePlans?.invalidateCache();
+          this.clearPlan();
+        },
+        error: (error) => console.error('[delivery] บันทึกลูกค้าลง backend ไม่สำเร็จ:', error),
+      });
+      return;
+    }
     const current = this.customers();
     const customer: Customer = { ...input, id: input.id || `c-${Date.now()}` };
     const next = input.id ? current.map((item) => item.id === input.id ? customer : item) : [...current, customer];
@@ -26,38 +121,40 @@ export class DeliveryService {
 
   deleteCustomer(id: string): boolean {
     if (this.orders().some((order) => order.customerId === id)) return false;
-    const next = this.customers().filter((customer) => customer.id !== id);
-    this.customers.set(next);
-    this.persist(CUSTOMER_KEY, next);
+    if (this.usingBackend() && this.api) {
+      const current = this.currentResponse();
+      this.api.deleteCustomer(id).subscribe({
+        next: () => { if (current()) this.customerDeleted(id); },
+        // 409 = backend บอกว่ามีออเดอร์อ้างอิงอยู่ — คงรายการไว้แล้วให้ toast ฝั่ง UI ตัดสินใจ
+        error: (error) => console.error('[delivery] ลบลูกค้าใน backend ไม่สำเร็จ:', error),
+      });
+      return true;
+    }
+    this.customerDeleted(id);
     return true;
   }
 
-  saveOrder(input: Omit<Order, 'id' | 'createdAt'> & { id?: string }): void {
-    const current = this.orders();
-    const existing = input.id ? current.find((order) => order.id === input.id) : undefined;
-    const order: Order = {
-      ...input,
-      id: input.id || `ORD-${String(Date.now()).slice(-6)}`,
-      createdAt: existing?.createdAt || new Date().toISOString(),
-    };
-    const next = input.id ? current.map((item) => item.id === input.id ? order : item) : [order, ...current];
-    this.orders.set(next);
-    this.persist(ORDER_KEY, next);
+  customerDeleted(id: string): void {
+    this.customers.update((list) => list.filter((customer) => customer.id !== id));
+    this.persist(CUSTOMER_KEY, this.customers());
+    this.routePlans?.invalidateCache();
     this.clearPlan();
   }
 
-  deleteOrder(id: string): void {
-    const next = this.orders().filter((order) => order.id !== id);
-    this.orders.set(next);
-    this.persist(ORDER_KEY, next);
-    this.clearPlan();
+  refresh(): void {
+    this.routePlans?.invalidateCache();
+    this.connect(true);
   }
 
-  simulateOrder(): void {
-    const activeCustomerIds = new Set(this.pendingOrders().map((order) => order.customerId));
-    const customer = this.customers().find((item) => !activeCustomerIds.has(item.id)) || this.customers()[0];
-    if (!customer) return;
-    this.saveOrder({ customerId: customer.id, boxes: (this.orders().length % 3) + 1, status: 'pending' });
+  orderDeleted(id: string): void {
+    this.ordersDeleted([id]);
+  }
+
+  ordersDeleted(ids: readonly string[]): void {
+    const removed = new Set(ids);
+    this.orders.update((list) => list.filter((order) => !removed.has(order.id)));
+    this.routePlans?.invalidateCache();
+    this.clearPlan();
   }
 
   calculateRoutes(alternative = false): RoutePlan {
@@ -69,7 +166,13 @@ export class DeliveryService {
   previewRoutes(version: number): RoutePlan {
     const orders = this.pendingOrders();
     const customerById = new Map(this.customers().map((customer) => [customer.id, customer]));
-    const sorted = [...orders].sort((a, b) => {
+    // ข้ามออเดอร์ที่ลูกค้าถูกลบไปแล้ว แทนที่จะพังทั้งแผน
+    const known = orders.filter((order) => customerById.has(order.customerId));
+    // ไม่มีไรเดอร์เลยก็คืนแผนว่าง หน้าเว็บยังแสดงผลได้ตามปกติ
+    if (!known.length || !this.riders().length) {
+      return this.emptyPlan(version);
+    }
+    const sorted = [...known].sort((a, b) => {
       const ca = customerById.get(a.customerId)!;
       const cb = customerById.get(b.customerId)!;
       return Math.atan2(ca.lat - SHOP.lat, ca.lng - SHOP.lng) - Math.atan2(cb.lat - SHOP.lat, cb.lng - SHOP.lng);
@@ -93,39 +196,51 @@ export class DeliveryService {
     return plan;
   }
 
+  private emptyPlan(version: number): RoutePlan {
+    return {
+      version,
+      generatedAt: new Date().toISOString(),
+      routes: [],
+      totalDistanceKm: 0,
+      totalDurationMinutes: 0,
+      deliveryCost: 0,
+      revenue: 0,
+      foodCost: 0,
+      profit: 0,
+      deadlineSafe: true,
+    };
+  }
+
   choosePlan(plan: RoutePlan): void {
     this.plan.set(plan);
-    this.persist(PLAN_KEY, plan);
+    this.confirmedPlan.set(null);
+  }
+
+  confirmPlan(): void {
+    const plan = this.plan();
+    if (!plan) return;
+    this.confirmedPlan.set(plan);
+    this.planHistory.update(history => [plan, ...history]);
   }
 
   routeForJobCode(jobCode: string): RiderRoute | null {
-    return this.plan()?.routes.find((route) => route.rider.jobCode.toLowerCase() === jobCode.trim().toLowerCase()) || null;
+    return this.confirmedPlan()?.routes.find((route) => route.rider.jobCode.toLowerCase() === jobCode.trim().toLowerCase()) || null;
   }
 
   customerFor(order: Order): Customer | undefined {
     return this.customers().find((customer) => customer.id === order.customerId);
   }
 
-  googleMapsUrl(route: RiderRoute): string {
-    const waypoints = route.stops.slice(0, -1).map((stop) => `${stop.customer.lat},${stop.customer.lng}`).join('|');
-    const destination = route.stops.at(-1)?.customer;
-    if (!destination) return 'https://www.google.com/maps';
-    const params = new URLSearchParams({
-      api: '1',
-      origin: `${SHOP.lat},${SHOP.lng}`,
-      destination: `${destination.lat},${destination.lng}`,
-      travelmode: 'driving',
-    });
-    if (waypoints) params.set('waypoints', waypoints);
-    return `https://www.google.com/maps/dir/?${params.toString()}`;
-  }
-
+  /** Explicit in-memory fixtures for legacy calculation tests; never an API-error fallback. */
   resetDemo(): void {
+    this.usingBackend.set(false);
     this.customers.set(structuredClone(DEMO_CUSTOMERS));
     this.orders.set(structuredClone(DEMO_ORDERS));
+    this.riders.set(structuredClone(DEMO_RIDERS));
     this.plan.set(null);
+    this.confirmedPlan.set(null);
+    this.planHistory.set([]);
     this.persist(CUSTOMER_KEY, this.customers());
-    this.persist(ORDER_KEY, this.orders());
     localStorage.removeItem(PLAN_KEY);
   }
 
@@ -151,9 +266,11 @@ export class DeliveryService {
     const totalBoxes = orders.reduce((sum, order) => sum + order.boxes, 0);
     const distanceKm = this.round(totalDistance);
     const durationMinutes = Math.ceil(distanceKm / 30 * 60);
-    const deliveryCost = this.round(15 + (2 * distanceKm * totalBoxes));
-    const revenue = totalBoxes * 65;
-    const foodCost = totalBoxes * 40;
+    // สูตรเดียวกับ backend cost-calculator: ฐาน + กม. × ต่อกม.ต่อกล่อง × จำนวนกล่อง (ตามสเปก Project.pdf)
+    const pricing = this.settings();
+    const deliveryCost = this.round((pricing?.riderBaseCost ?? 15) + distanceKm * (pricing?.riderCostPerKm ?? 2) * totalBoxes);
+    const revenue = totalBoxes * (pricing?.boxSalePrice ?? 65);
+    const foodCost = totalBoxes * (pricing?.boxFoodCost ?? 40);
     return {
       rider: this.riders()[riderIndex % this.riders().length],
       stops,
@@ -186,20 +303,28 @@ export class DeliveryService {
 
   private clearPlan(): void {
     this.plan.set(null);
+    this.confirmedPlan.set(null);
     localStorage.removeItem(PLAN_KEY);
   }
 
   private persist(key: string, value: unknown): void {
-    localStorage.setItem(key, JSON.stringify(value));
+    try { localStorage.setItem(key, JSON.stringify(value)); }
+    catch { console.warn('[delivery] บันทึก cache ในเครื่องไม่ได้ จะใช้ข้อมูลที่อยู่ในหน่วยความจำ'); }
   }
 
-  private load<T>(key: string, fallback: T): T {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) as T : structuredClone(fallback);
-    } catch {
-      return structuredClone(fallback);
-    }
+  clearForLogout(): void {
+    this.loadGeneration++;
+    this.customers.set([]);
+    this.orders.set([]);
+    this.riders.set([]);
+    this.plan.set(null);
+    this.confirmedPlan.set(null);
+    this.planHistory.set([]);
+    this.settings.set(null);
+    this.usingBackend.set(false);
+    this.connecting.set(false);
+    this.connectionError.set('');
+    this.routePlans?.invalidateCache();
   }
 
   private round(value: number): number {

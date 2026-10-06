@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+@theme {
+  --font-sans: 'Bai Jamjuree', 'Noto Sans Thai', 'Leelawadee UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Mono', monospace;
+  --color-neu: #f8faff;
+  --color-neu-light: #ffffff;
+  --color-neu-dark: #dbe3f1;
+  --color-ink: #17171a;
+  --color-surface-subtle: #f3f7ff;
+  --color-line: #dbe3f1;
+  --color-line-strong: #b9c8df;
+  --color-primary: #0053fd;
+  --color-primary-hover: #003fc7;
+  --color-info-soft: #eaf1ff;
+  --color-success: #16865c;
+  --color-warning-soft: #fff5df;
+}
+
+@layer base {
+  html { @apply bg-neu font-sans text-ink antialiased; }
+  body { @apply m-0 min-h-screen min-w-80 bg-neu leading-relaxed; }
+  button, a, input, textarea, select { @apply focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary; }
+  button:not(:disabled), a { @apply cursor-pointer; }
+  button:disabled { @apply cursor-not-allowed opacity-50; }
+  input, textarea, select { caret-color: var(--color-primary); }
+  a { text-underline-offset: .18em; }
+  * { scrollbar-color: var(--color-line-strong) var(--color-surface-subtle); scrollbar-width: thin; }
+  ::selection { background: #dbe8ff; color: var(--color-ink); }
+}
+
+@layer components {
+  .neu-panel { @apply border border-line bg-white; box-shadow: 0 1px 2px rgb(29 49 86 / .04); }
+  .neu-panel-soft { @apply border border-line bg-white; box-shadow: none; }
+  .neu-inset { @apply border border-line bg-surface-subtle; box-shadow: none; }
+  .neu-control { @apply border border-line-strong bg-white text-slate-800 transition-[background-color,border-color,color,transform] duration-200; box-shadow: none; }
+  .neu-control:hover:not(:disabled) { @apply border-blue-300 bg-surface-subtle text-blue-700; }
+  .neu-control:active:not(:disabled) { transform: translateY(1px); }
+  .neu-control-active { @apply border-blue-100 bg-info-soft text-blue-700; box-shadow: none; }
+  .neu-primary { @apply border border-blue-700 bg-primary text-white transition-[background-color,transform] duration-200 hover:bg-primary-hover; box-shadow: none; }
+  .neu-primary:active:not(:disabled) { transform: translateY(1px); }
+  .neu-field { @apply border border-line-strong bg-white text-ink placeholder:text-slate-500; box-shadow: none; }
+  .neu-field:focus { @apply border-blue-600; box-shadow: 0 0 0 3px rgb(0 83 253 / .12); }
+}
+
+.leaflet-container { font-family: var(--font-sans); }
+.leaflet-control-zoom { border: 1px solid var(--color-line) !important; border-radius: 12px !important; overflow: hidden; box-shadow: 0 8px 22px rgb(38 56 88 / .1) !important; }
+.leaflet-control-zoom a { width: 44px !important; height: 44px !important; line-height: 44px !important; border-color: var(--color-line) !important; color: var(--color-ink); }
+.leaflet-popup-content-wrapper { border: 1px solid var(--color-line); border-radius: .75rem; background: #fff; box-shadow: 0 12px 28px rgb(29 49 86 / .16); }
+.leaflet-popup-tip { box-shadow: none; }
+.location-pin { border: 0; background: transparent; }
+.location-pin span { display: block; width: 26px; height: 26px; margin-left: 9px; border: 4px solid white; border-radius: 50% 50% 50% 0; background: var(--color-primary); box-shadow: 0 3px 9px rgb(23 23 26 / .28); transform: rotate(-45deg); }
+.route-sequence-pin { display: grid; place-items: center; border: 0; background: transparent; }
+.route-sequence-pin span { display: grid; width: 58px; height: 30px; place-items: center; border: 2px solid var(--route-color); border-radius: 999px; background: white; box-shadow: 0 3px 10px rgb(15 23 42 / .24); color: var(--color-ink); font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .neu-control, .neu-primary { transition-property: background-color, border-color, color; transition-duration: 120ms; }
+  .neu-control:active:not(:disabled), .neu-primary:active:not(:disabled) { transform: none; }
+  .animate-spin { animation: none; }
+}
+
+@media (forced-colors: active) {
+  :focus-visible { outline: 2px solid ButtonText; }
+}

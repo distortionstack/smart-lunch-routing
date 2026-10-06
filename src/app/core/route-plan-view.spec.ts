@@ -1,5 +1,5 @@
 import { DeliveryRouteModel, RoutePlanModel } from './route-plan.models';
-import { approximateLine, deadlineLabel, geometryToLatLngs, routeColor, routingSourceLabel } from './route-plan-view';
+import { approximateLine, deadlineLabel, geometryToLatLngs, routeColor, routingSourceLabel, stopLine } from './route-plan-view';
 
 const ROAD_JOB: DeliveryRouteModel = {
   riderIndex: 1,
@@ -14,7 +14,7 @@ const ROAD_JOB: DeliveryRouteModel = {
   geometry: { type: 'LineString', coordinates: [[103.25, 16.24], [103.26, 16.25]] },
   approximate: false,
   stops: [
-    { sequence: 1, orderId: 7, customerId: 3, customerName: 'C', phone: '0803', address: null, latitude: 16.25, longitude: 103.26, boxCount: 3, distanceFromPreviousKm: 4.3, travelTimeFromPreviousMin: 18, estimatedArrivalTime: '11:48' },
+    { sequence: 1, orderId: 7, customerId: 3, customerName: 'C', phone: '0803', address: null, latitude: 16.25, longitude: 103.26, boxCount: 3, distanceFromPreviousKm: 4.3, travelTimeFromPreviousMin: 18, estimatedArrivalTime: '11:48', deliveryStatus: 'WAITING' },
   ],
 };
 
@@ -59,6 +59,17 @@ describe('route-plan-view', () => {
   it('labels road vs approximate routing for the fallback state', () => {
     expect(routingSourceLabel(PLAN)).toContain('OSRM');
     expect(routingSourceLabel({ ...PLAN, routingSource: 'HAVERSINE', approximate: true })).toContain('โดยประมาณ');
+    expect(routingSourceLabel({ ...PLAN, jobs: [{ ...ROAD_JOB, geometry: null }] })).toContain('เส้นบนแผนที่เป็นเส้นประมาณ');
+    expect(routingSourceLabel({ ...PLAN, jobs: [ROAD_JOB, { ...ROAD_JOB, geometry: null }] })).toContain('บางเส้น');
+  });
+
+  it('uses the order leg and labels older plans without leg geometry approximate', () => {
+    const job = { ...ROAD_JOB, stops: [
+      { ...ROAD_JOB.stops[0]!, geometry: { type: 'LineString' as const, coordinates: [[103.25, 16.24], [103.26, 16.25]] as Array<[number, number]> } },
+      { ...ROAD_JOB.stops[0]!, orderId: 8, latitude: 16.26, longitude: 103.27, geometry: null },
+    ] };
+    expect(stopLine([16.24, 103.25], job, 0)).toEqual({ points: [[16.24, 103.25], [16.25, 103.26]], approximate: false });
+    expect(stopLine([16.24, 103.25], job, 1)).toEqual({ points: [[16.25, 103.26], [16.26, 103.27]], approximate: true });
   });
 
   it('reports deadline status factually from backend finish time', () => {

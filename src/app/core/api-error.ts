@@ -6,6 +6,7 @@
  * cannot leak internals into the UI.
  */
 export function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.name === 'TimeoutError') return 'หมดเวลารอระบบ หากเป็นการบันทึก กรุณารีเฟรชตรวจสอบผลก่อนลองใหม่';
   if (error !== null && typeof error === 'object') {
     const body = (error as { error?: unknown }).error;
     if (body !== null && typeof body === 'object') {

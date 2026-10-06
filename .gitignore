@@ -17,7 +17,6 @@ yarn-error.log
 .env
 .env.local
 backend/.env
-backend/.env.*
 backend/.env.local
 
 # Aiven CA certificate — never commit (backend/certs/README.md stays tracked)
@@ -58,12 +57,3 @@ Thumbs.db
 
 # Generated PDF preview
 /_pdf_preview/
-
-# Private database migration dumps
-backend/migration/*.sql
-backend/certs/*.crt
-backend/certs/*.key
-backend/certs/*.pfx
-
-# Backend is managed as its own Git repository.
-/backend

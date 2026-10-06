@@ -1,0 +1,236 @@
+<section class="mx-auto max-w-[1560px] p-3 sm:p-5 lg:p-6">
+  <h2 class="sr-only">ภาพรวมการจัดส่งวันนี้</h2>
+  @if (!store.usingBackend()) {
+    <div class="mb-4 rounded-xl border border-amber-300 bg-warning-soft p-3 text-sm text-amber-900" role="status">
+      <p>{{ store.connectionError() || 'กำลังเชื่อมต่อข้อมูลจัดส่ง ยังไม่มีข้อมูลยืนยันจากระบบ' }}</p>
+      <button class="neu-control mt-2 min-h-11 rounded-lg px-4 font-bold" type="button" (click)="store.refresh()" [disabled]="store.connecting()">{{ store.connecting() ? 'กำลังโหลด...' : 'ลองเชื่อมต่ออีกครั้ง' }}</button>
+    </div>
+  }
+  @if (plansError) { <div class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-900" role="alert">{{ plansError }}</div> }
+
+  @if (store.usingBackend()) {
+    <section id="saved-plans" class="neu-panel mb-4 min-w-0 rounded-xl p-4 sm:p-5" aria-labelledby="saved-plans-title">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="saved-plans-title" class="text-lg font-bold">แผนจัดส่งที่บันทึกไว้ <span class="font-mono text-sm text-slate-500">({{ savedPlans.length }})</span></h2>
+          <p class="mt-1 break-words text-sm text-slate-600">เปิดแต่ละรอบเพื่อดูเส้นทางและสถานะงาน ก่อนออกใบงานให้ไรเดอร์</p>
+        </div>
+        <button class="neu-control min-h-11 rounded-lg px-4 text-sm font-bold" type="button" [disabled]="loadingPlans" (click)="loadSavedPlans()">{{ loadingPlans ? 'กำลังโหลด...' : 'รีเฟรชรายการ' }}</button>
+      </div>
+      @if (loadingPlans && !savedPlans.length) {
+        <p class="mt-4 rounded-lg bg-surface-subtle p-4 text-sm text-slate-600" role="status">กำลังโหลดแผนที่บันทึกไว้...</p>
+      } @else if (savedPlans.length) {
+        <ol class="mt-4 grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          @for (saved of visibleSavedPlans; track saved.routePlanId) {
+            <li class="min-w-0 rounded-xl border p-3" [class.border-primary]="backendPlanId === saved.routePlanId" [class.border-line]="backendPlanId !== saved.routePlanId" [class.bg-info-soft]="backendPlanId === saved.routePlanId">
+              <div class="flex items-center justify-between gap-2"><strong class="font-mono">รอบ #{{ saved.routePlanId }}</strong><span class="rounded-full px-2 py-1 text-xs font-bold" [class.bg-emerald-100]="saved.status === 'SELECTED'" [class.text-emerald-800]="saved.status === 'SELECTED'" [class.bg-slate-100]="saved.status !== 'SELECTED'">{{ planStatusLabel(saved.status) }}</span></div>
+              <p class="mt-2 text-sm text-slate-600">{{ saved.riderCount }} ไรเดอร์ · {{ saved.totalBoxes }} กล่อง · {{ saved.totalDistanceKm | number:'1.1-2' }} กม.</p>
+              <p class="mt-1 text-sm font-bold" [class.text-emerald-700]="saved.estimatedProfit >= 0" [class.text-red-700]="saved.estimatedProfit < 0">กำไร {{ saved.estimatedProfit | currency:'THB':'symbol-narrow':'1.0-0' }}</p>
+              <p class="mt-1 text-xs text-slate-600">เริ่ม {{ saved.startTime || '—' }} · เสร็จก่อน {{ saved.deliveryDeadline || '—' }}</p>
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <button class="neu-control col-span-2 min-h-11 rounded-lg px-3 text-sm font-bold" type="button" [disabled]="loadingPlanDetail" (click)="viewSavedPlan(saved.routePlanId!, false, true)">{{ loadingPlanDetail ? 'กำลังเปิดเส้นทาง...' : backendPlanId === saved.routePlanId ? 'ไปที่แผนที่' : 'ดูเส้นทางบนแผนที่' }}</button>
+                @if (saved.status === 'GENERATED') { <button class="neu-primary min-h-11 rounded-lg px-3 text-sm font-bold" type="button" (click)="viewSavedPlan(saved.routePlanId!, true)">ตรวจทาน</button> }
+                <button class="min-h-11 rounded-lg px-2 text-xs font-bold text-red-700 underline" type="button" (click)="deleteSavedPlan(saved)">ลบ</button>
+              </div>
+            </li>
+          }
+        </ol>
+        @if (savedPlans.length > 4) { <button class="neu-control mt-3 min-h-11 rounded-lg px-4 text-sm font-bold" type="button" (click)="showAllSavedPlans = !showAllSavedPlans">{{ showAllSavedPlans ? 'แสดงเฉพาะล่าสุด' : 'ดูแผนทั้งหมด ' + savedPlans.length + ' รายการ' }}</button> }
+      } @else if (!plansError) {
+        <p class="mt-4 rounded-lg bg-surface-subtle p-4 text-sm text-slate-600">ยังไม่มีแผนที่บันทึกไว้ กด “คำนวณเส้นทาง” เพื่อสร้างแผนแรก</p>
+      }
+    </section>
+  }
+
+  <section class="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="ภาพรวมการจัดส่ง">
+    <article class="neu-panel relative min-h-24 rounded-xl p-4">
+      <span class="absolute right-4 top-4 size-2 rounded-full bg-primary" aria-hidden="true"></span>
+      <span class="text-xs font-semibold text-slate-500">ออเดอร์วันนี้</span>
+      <strong class="mt-1 block font-mono text-2xl font-semibold tracking-tight sm:text-3xl">{{ store.orders().length }}</strong>
+      <small class="text-slate-600">{{ store.pendingOrders().length }} รายการพร้อมจัดส่ง</small>
+    </article>
+    <article class="neu-panel relative min-h-24 rounded-xl p-4">
+      <span class="absolute right-4 top-4 size-2 rounded-full bg-[#c96a16]" aria-hidden="true"></span>
+      <span class="text-xs font-semibold text-slate-500">ข้าวกล่องทั้งหมด</span>
+      <strong class="mt-1 block font-mono text-2xl font-semibold tracking-tight sm:text-3xl">{{ store.plan()?.routes?.length ? (backendPlan?.totalBoxes ?? store.pendingBoxes()) : store.pendingBoxes() }}</strong>
+      <small class="text-slate-600">{{ backendPlan ? 'ในแผนที่เปิดอยู่' : 'จากออเดอร์ที่ยังไม่ส่ง' }}</small>
+    </article>
+    <article class="neu-panel relative min-h-24 rounded-xl p-4">
+      <span class="absolute right-4 top-4 size-2 rounded-full bg-success" aria-hidden="true"></span>
+      <span class="text-xs font-semibold text-slate-500">ระยะทางรวม</span>
+      <strong class="mt-1 block font-mono text-2xl font-semibold tracking-tight sm:text-3xl">{{ store.plan()?.totalDistanceKm || 0 }}<span class="ml-1 text-xs font-medium text-slate-500">กม.</span></strong>
+      <small class="text-slate-600">{{ backendPlanId ? 'แผน #' + backendPlanId : store.plan() ? 'แผนในเครื่องเวอร์ชัน ' + store.plan()?.version : 'รอคำนวณเส้นทาง' }}</small>
+    </article>
+    <article class="neu-panel relative min-h-24 rounded-xl p-4">
+      <span class="absolute right-4 top-4 size-2 rounded-full" [class.bg-emerald-600]="store.plan()?.deadlineSafe" [class.bg-red-600]="store.plan() && !store.plan()?.deadlineSafe" [class.bg-slate-300]="!store.plan()" aria-hidden="true"></span>
+      <span class="text-xs font-semibold text-slate-500">กำไรประมาณการ</span>
+      <strong class="mt-1 block font-mono text-2xl font-semibold tracking-tight sm:text-3xl" [class.text-emerald-700]="(store.plan()?.profit || 0) >= 0" [class.text-red-700]="(store.plan()?.profit || 0) < 0">{{ (store.plan()?.profit || 0) | currency:'THB':'symbol-narrow':'1.0-0' }}</strong>
+      <small class="text-slate-600">{{ store.plan()?.deadlineSafe ? 'ผ่านเงื่อนไขเวลาในแบบจำลอง' : store.plan() ? 'ไม่ผ่านเงื่อนไขเวลาในแบบจำลอง' : 'รอคำนวณต้นทุน' }}</small>
+    </article>
+  </section>
+
+  <div class="result-grid grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,.75fr)]">
+    <section #routeMapPanel tabindex="-1" class="neu-panel min-w-0 overflow-hidden rounded-xl max-xl:order-2" aria-labelledby="operations-map-title">
+      <header class="flex min-h-[68px] items-center justify-between gap-4 border-b border-line px-4 py-3">
+        <div><h2 id="operations-map-title" class="font-bold">ภาพรวมเส้นทางไรเดอร์</h2></div>
+        <a class="neu-control inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-bold" routerLink="/owner/orders"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>เพิ่มออเดอร์</a>
+      </header>
+      <div class="relative h-[430px] bg-surface-subtle sm:h-[560px] xl:min-h-[650px]">
+        @if (mapJobs(); as jobs) {
+          <app-route-plan-map [jobs]="jobs" [shop]="[mapShop()?.latitude ?? shopPoint()[0], mapShop()?.longitude ?? shopPoint()[1]]" [shopName]="mapShop()?.shopName ?? 'ร้าน'" [startTime]="mapStart()" [riderNames]="mapRiderNames()" [selectedJob]="selectedRoute" (selectedJobChange)="selectedRoute = $event" />
+        } @else {
+          <app-delivery-map [shop]="{lat:shopPoint()[0],lng:shopPoint()[1],name:mapShop()?.shopName ?? 'ร้าน'}" [startTime]="mapStart()" [customers]="store.dispatchCustomers()" [routes]="store.plan()?.routes || []" [selectedIndex]="selectedRoute" (selectedIndexChange)="selectedRoute = $event" />
+        }
+        <div class="pointer-events-none absolute left-3 top-3 z-[500] inline-flex items-center gap-2 rounded-lg border border-line bg-white/95 px-3 py-2 text-sm font-semibold text-slate-700 shadow-[0_8px_22px_rgba(38,56,88,.1)]" role="status">{{ loadingPlanDetail ? 'กำลังเปิดเส้นทาง...' : backendPlanId ? 'แผน #' + backendPlanId + ' · ' + (store.confirmedPlan() ? 'ยืนยันแล้ว' : 'ฉบับร่าง') : store.plan() ? 'แผนฉบับร่างในเครื่อง' : store.dispatchCustomers().length ? 'จุดส่งของออเดอร์วันนี้' : 'ยังไม่มีจุดส่งวันนี้' }}</div>
+      </div>
+      <footer class="flex min-h-14 flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2 text-sm text-slate-600"><span><strong class="text-slate-700">คำอธิบาย:</strong> ป้าย R01-2 = ไรเดอร์คันที่ 1 จุดส่งที่ 2</span><span>ข้อมูลแผนที่ © OpenStreetMap</span></footer>
+    </section>
+
+    <aside #dispatchPanel tabindex="-1" class="neu-panel flex min-h-[600px] flex-col overflow-hidden rounded-xl max-xl:order-1" aria-labelledby="dispatch-title">
+      <div class="border-b border-line p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2"><h2 id="dispatch-title" class="text-lg font-bold">จัดงานก่อนรถออก</h2>@if (backendPlanId !== null && store.confirmedPlan()) { <button class="neu-control min-h-11 rounded-lg px-3 text-sm font-bold" type="button" [disabled]="loadingPlanDetail" (click)="viewSavedPlan(backendPlanId)">{{ loadingPlanDetail ? 'กำลังอัปเดต...' : 'รีเฟรชสถานะส่ง' }}</button> }</div>
+        <p class="mt-1 text-sm text-slate-600">คำนวณแผน ตรวจทาน แล้วจึงยืนยันใบงานให้ไรเดอร์</p>
+        <fieldset class="mt-3 grid grid-cols-2 gap-2" [disabled]="calculating || confirmingPlan">
+          <legend class="mb-2 text-sm font-semibold">เวลาของรอบที่จะคำนวณใหม่</legend>
+          <label class="grid gap-1 text-sm">เริ่มส่ง<input class="neu-field min-h-11 rounded-lg px-2" type="time" name="roundStart" [ngModel]="roundStart || store.settings()?.deliveryStartTime?.slice(0,5) || '11:30'" (ngModelChange)="roundStart = $event" /></label>
+          <label class="grid gap-1 text-sm">เสร็จก่อน<input class="neu-field min-h-11 rounded-lg px-2" type="time" name="roundDeadline" [ngModel]="roundDeadline || store.settings()?.deliveryDeadline?.slice(0,5) || '12:30'" (ngModelChange)="roundDeadline = $event" /></label>
+        </fieldset>
+        <details class="mt-3 rounded-lg border border-line p-3">
+          <summary class="cursor-pointer text-sm font-semibold">เลือกออเดอร์ในรอบนี้ · {{ selectedOrderIds.length ? selectedOrderIds.length : store.pendingOrders().length }} รายการ</summary>
+          <p class="mt-2 text-xs text-slate-600">ไม่เลือก = จัดทั้งหมด หากไรเดอร์ไม่พอ ให้เลือกบางรายการ ส่วนที่เหลือรอรอบถัดไป</p>
+          <fieldset class="mt-2 max-h-48 overflow-y-auto" [disabled]="calculating || confirmingPlan">
+            @for (order of store.pendingOrders(); track order.id) {
+              <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" [checked]="selectedOrderIds.includes(+order.id)" (change)="toggleOrder(+order.id, $any($event.target).checked)" />{{ store.customerFor(order)?.name || order.id }} · {{ order.boxes }} กล่อง</label>
+            }
+          </fieldset>
+        </details>
+        <div class="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] xl:grid-cols-1 2xl:grid-cols-[1fr_auto]">
+          <div class="flex min-h-11 items-center justify-between rounded-lg border border-line bg-white px-3 text-sm"><span class="text-slate-500">ไรเดอร์พร้อมงาน</span><strong class="font-mono">{{ readyRiders().length }}</strong></div>
+          @if (!store.plan()) {
+            <button class="neu-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 font-bold" type="button" [disabled]="calculating || !canCalculate()" (click)="calculate()">
+              @if (calculating) { <svg class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"/><path fill="currentColor" d="M12 3a9 9 0 0 1 9 9h-3a6 6 0 0 0-6-6V3Z"/></svg> }
+              <span>{{ calculating ? 'กำลังคำนวณ...' : 'คำนวณเส้นทาง' }}</span>
+            </button>
+          } @else if (canCalculate()) {
+            <button class="neu-primary inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 font-bold" type="button" [disabled]="!!candidate || calculating" (click)="store.confirmedPlan() ? calculate() : compare()"><svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6"/></svg><span>{{ calculating ? 'กำลังคำนวณ...' : 'คำนวณแผนใหม่' }}</span></button>
+          } @else {
+            <span class="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">ยังไม่มีออเดอร์ใหม่ที่ต้องจัดเส้นทาง</span>
+          }
+        </div>
+      </div>
+
+      @if (!canCalculate() && !store.plan()) {
+        <div class="m-4 rounded-lg bg-warning-soft p-3 text-sm text-amber-900" role="alert" aria-live="assertive"><strong class="block">ข้อมูลยังไม่พร้อม</strong><span>ตรวจว่ามีออเดอร์ ลูกค้ามีพิกัด และจำนวนอยู่ระหว่าง 1–3 กล่อง</span></div>
+      } @else if (store.plan(); as plan) {
+        <div class="m-4 flex items-start gap-3 rounded-lg p-3" [class.bg-emerald-50]="plan.deadlineSafe" [class.text-emerald-800]="plan.deadlineSafe" [class.bg-red-50]="!plan.deadlineSafe" [class.text-red-800]="!plan.deadlineSafe" aria-live="polite">
+          <span class="grid size-6 shrink-0 place-items-center rounded-full border border-current font-mono text-xs">{{ plan.deadlineSafe ? '✓' : '!' }}</span>
+          <span><strong class="block">{{ store.confirmedPlan() ? 'ยืนยันใบงานแล้ว' : plan.deadlineSafe ? 'แผนฉบับร่าง · ผ่านเงื่อนไขเวลา' : 'แผนฉบับร่าง · ไม่ผ่านเงื่อนไขเวลา' }}</strong><small class="block text-sm">แบบจำลองคาดว่าส่งครบ {{ finishTime(plan) }} น.@if (plan.deadlineSafe) { เหลือ {{ marginMinutes(plan) }} นาที } · {{ routingNote() ?? 'ใช้ระยะเส้นตรง ไม่รวมจราจรและเวลาส่งของ' }}</small></span>
+        </div>
+      } @else {
+        <div class="m-4 flex items-start gap-3 rounded-lg bg-info-soft p-3 text-blue-800"><span class="grid size-6 shrink-0 place-items-center rounded-full border border-current font-mono text-xs">i</span><span><strong class="block">พร้อมสร้างแผน</strong><small>{{ store.pendingOrders().length }} ออเดอร์ · {{ store.pendingBoxes() }} กล่อง</small></span></div>
+      }
+
+      @if (store.plan(); as plan) {
+        <section class="mx-4 mb-4 rounded-xl border border-line bg-surface-subtle p-4" aria-label="ขั้นตอนออกใบงาน">
+          <h3 class="font-bold">{{ store.confirmedPlan() ? 'ใบงานพร้อมเปิด' : reviewing ? 'ตรวจทานก่อนยืนยัน' : 'แผนยังไม่ส่งให้ไรเดอร์' }}</h3>
+          @if (fallbackNotice && !store.confirmedPlan()) {
+            <p class="mt-3 rounded-lg border border-amber-300 bg-warning-soft p-3 text-sm text-amber-900" role="alert"><strong class="block">ต่อระบบหลังบ้านไม่ได้</strong>ตัวเลขนี้คำนวณแบบเส้นตรงโดยประมาณ จะกลับเป็นเส้นถนนจริงเมื่อต่อ backend สำเร็จ</p>
+          }
+          @if (store.confirmedPlan()) {
+            <p class="mt-1 text-sm text-slate-700">ยืนยัน {{ plan.routes.length }} ใบงานแล้ว ไรเดอร์เข้าสู่ระบบด้วยบัญชีของตนเพื่อดูงานที่ได้รับ</p>
+            @if (lateOverride) {
+              <p class="mt-2 rounded-lg bg-red-50 p-2 text-sm font-semibold text-red-800">แผนนี้ยืนยันทั้งที่คาดว่าส่งเกิน {{ deadlineLabel() }}</p>
+            }
+            <p class="mt-3 text-sm text-slate-600">ไรเดอร์ต้องเข้าสู่ระบบด้วยบัญชีของตนเองเพื่อเปิดใบงานและนำทาง</p>
+          } @else if (reviewing) {
+            @if (backendPlan?.status === 'GENERATED') {
+              <fieldset class="mt-3 grid gap-3" [disabled]="confirmingPlan">
+                <legend class="font-bold">มอบหมายผู้รับเส้นทาง</legend>
+                @for (job of backendPlan!.jobs; track job.jobId; let i = $index) {
+                  <label class="grid gap-1 text-sm" [for]="'assign-rider-' + job.jobId">เส้นทาง {{ i + 1 }} · {{ job.totalOrders }} ออเดอร์ · {{ job.totalBoxes }} กล่อง
+                    <select class="neu-field min-h-11 rounded-lg px-2" [id]="'assign-rider-' + job.jobId" [name]="'assign-rider-' + job.jobId" [ngModel]="riderAssignments[job.jobId!]" (ngModelChange)="assignRider(job.jobId!, $event)">
+                      <option [ngValue]="null" disabled>เลือกไรเดอร์พร้อมงาน</option>
+                      @for (rider of readyRiders(); track rider.id) { <option [ngValue]="+rider.id">{{ rider.name }} · วันนี้รับแล้ว {{ rider.assignedOrdersToday || 0 }} ออเดอร์</option> }
+                    </select>
+                  </label>
+                }
+                <p class="text-xs text-slate-600">เปลี่ยนผู้รับได้ก่อนยืนยันเท่านั้น ระบบตรวจงานค้างและการเลือกคนซ้ำอีกครั้งตอนออกใบงาน</p>
+              </fieldset>
+            }
+            <p class="mt-1 text-sm text-slate-700">ตรวจ {{ plan.routes.length }} เส้นทาง รวม {{ totalStops(plan) }} จุดส่ง และเวลาถึงก่อนออกใบงาน · {{ routingNote() ?? 'เส้นทางในเครื่องเป็นระยะโดยประมาณ' }} · เวลาส่งของต่อจุด {{ plan.shop?.stopServiceMinutes || 0 }} นาที · ไม่รวมจราจรสด</p>
+            @if (!plan.deadlineSafe) {
+              <label class="mt-3 flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-900" for="ack-late"><input #ackLate id="ack-late" type="checkbox" class="size-5" name="acknowledgeLate" [(ngModel)]="acknowledgeLate" (ngModelChange)="ackError = false" />รับทราบว่าแผนนี้คาดว่าส่งเกิน {{ deadlineLabel() }}</label>
+              @if (ackError && !acknowledgeLate) {
+                <p class="mt-2 text-sm font-semibold text-red-800" role="alert">กรุณาติ๊กรับทราบก่อนกดยืนยัน</p>
+              }
+            }
+            <div class="mt-3 flex flex-wrap gap-2"><button class="neu-control min-h-11 rounded-lg px-4 text-sm font-bold" type="button" (click)="reviewing = false">กลับไปดูแผน</button>@if (plan.deadlineSafe) { <button class="neu-primary min-h-11 rounded-lg px-4 text-sm font-bold" type="button" [disabled]="confirmingPlan" (click)="confirm()">ยืนยันและออกใบงาน</button> } @else { <button class="min-h-11 rounded-lg bg-red-700 px-4 text-sm font-bold text-white" type="button" [attr.aria-disabled]="!acknowledgeLate" aria-describedby="ack-late" [disabled]="confirmingPlan" (click)="confirm()">ยืนยันทั้งที่เกินเวลา</button> }</div>
+          } @else {
+            <p class="mt-1 text-sm text-slate-600">ตรวจลำดับจุดส่งและเวลาโดยประมาณก่อนยืนยัน รหัสใบงานจะแสดงหลังยืนยันเท่านั้น</p>
+            <button class="neu-primary mt-3 min-h-11 rounded-lg px-4 text-sm font-bold" type="button" [attr.aria-disabled]="!!candidate" (click)="candidate ? focusCandidate() : startReview()">ตรวจทานแผน</button>
+            @if (candidate) {
+              <p class="mt-2 text-sm font-semibold text-blue-800">มีแผนใหม่รอเลือกอยู่ด้านล่าง — เลือกหรือทิ้งก่อนแล้วค่อยตรวจทาน</p>
+            }
+          }
+          <p class="mt-3 text-sm text-slate-600">{{ backendPlanId ? 'แผนนี้บันทึกในระบบแล้ว การยืนยันจะออกใบงานให้ไรเดอร์' : 'แผนในเครื่องยังไม่บันทึกในระบบหลังบ้าน' }}</p>
+        </section>
+      }
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
+        @if (store.plan(); as plan) {
+          @for (route of plan.routes; track route.rider.id; let i = $index) {
+            <article class="border-b border-line p-3 last:border-0" [class.opacity-40]="selectedRoute !== null && selectedRoute !== i">
+              <div class="flex items-center gap-3"><span class="grid size-9 shrink-0 place-items-center rounded-lg border-2 font-mono text-[13px] font-bold text-ink" [style.background]="'color-mix(in srgb, ' + route.rider.color + ' 12%, white)'" [style.borderColor]="route.rider.color">R{{ String(i + 1).padStart(2, '0') }}</span><span class="min-w-0 flex-1"><strong class="block truncate">{{ route.rider.name }}</strong>@if (store.confirmedPlan()) { <small class="block font-mono text-sm text-slate-700">{{ route.rider.jobCode }}</small> } @else { <small class="block text-sm text-slate-600">รหัสใบงานรอยืนยัน</small> }</span>@if (isLate(route)) { <span class="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-800">เกิน +{{ lateMinutes(route) }} นาที</span> }<strong class="font-mono text-sm">{{ routeFinishTime(route) }}</strong></div>@if (store.confirmedPlan()) { <p class="mt-2 text-sm font-semibold text-slate-600">{{ backendPlan?.jobs?.[i]?.status === 'COMPLETED' ? 'ส่งครบแล้ว' : backendPlan?.jobs?.[i]?.status === 'DELIVERING' ? 'กำลังส่ง' : backendPlan?.jobs?.[i]?.acknowledgedAt ? 'ไรเดอร์รับทราบแล้ว' : 'รอไรเดอร์รับทราบงาน' }}</p> }
+              <div class="mt-3 grid grid-cols-3 gap-2 text-[13px]"><span><small class="block text-slate-500">จุดส่ง</small><strong class="font-mono">{{ route.stops.length }} จุด</strong></span><span><small class="block text-slate-500">จำนวน</small><strong class="font-mono">{{ route.totalBoxes }} กล่อง</strong></span><span><small class="block text-slate-500">ระยะทาง</small><strong class="font-mono">{{ route.distanceKm | number:'1.1-2' }} กม.</strong></span></div>
+              <div class="mt-3 flex flex-wrap items-center gap-1.5 text-xs"><span class="font-semibold text-slate-600">ออเดอร์ที่รับผิดชอบ:</span>@for (stop of route.stops; track stop.order.id) { <span class="rounded-md px-2 py-1 font-mono font-bold text-ink" [class.bg-emerald-100]="stop.deliveryStatus === 'DELIVERED'" [class.bg-info-soft]="stop.deliveryStatus !== 'DELIVERED'">#{{ stop.order.id }}{{ stop.deliveryStatus === 'DELIVERED' ? ' ✓' : '' }}</span> }</div>
+              <details class="mt-3 rounded-lg border border-line bg-white/60" [open]="isLate(route)">
+                <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-[13px] font-semibold">R{{ String(i + 1).padStart(2, '0') }} · {{ route.rider.name }} · {{ route.stops.length }} จุด · {{ route.distanceKm | number:'1.1-2' }} กม. · ถึง {{ routeFinishTime(route) }}<span class="text-slate-500">{{ isLate(route) ? 'สาย ▼' : '▶' }}</span></summary>
+                <ol class="space-y-1.5 border-t border-line px-3 py-2 text-[13px] text-slate-600">@for (stop of route.stops; track stop.order.id) { <li class="flex flex-wrap items-center gap-x-2 gap-y-1"><span class="font-mono font-bold text-ink">{{ stop.sequence }}</span><span class="font-mono text-ink">#{{ stop.order.id }}</span><span class="min-w-0 flex-1 truncate">{{ stop.customer.name }}</span><span>{{ stop.arrivalTime }} น.</span>@if (stop.deliveryStatus) { <span class="font-semibold" [class.text-emerald-700]="stop.deliveryStatus === 'DELIVERED'">{{ !store.confirmedPlan() ? 'ยังไม่ยืนยัน' : stop.deliveryStatus === 'DELIVERED' ? 'ส่งแล้ว' : stop.deliveryStatus === 'DELIVERING' ? 'กำลังส่ง' : 'รอส่ง' }}</span> }</li> }</ol>
+              </details>
+            </article>
+          }
+        } @else {
+          <div class="grid min-h-60 place-items-center px-6 text-center"><div><span class="mx-auto grid size-12 place-items-center rounded-xl bg-info-soft text-primary"><svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18-6 3V6l6-3 6 3 6-3v15l-6 3-6-3Zm0 0V3m6 18V6"/></svg></span><strong class="mt-3 block">ยังไม่มีแผนจัดส่ง</strong><p class="mt-1 text-sm text-slate-500">กดคำนวณเพื่อแบ่งงานให้ไรเดอร์โดยอัตโนมัติ</p></div></div>
+        }
+
+        @if (candidate; as next) {
+          @if (store.plan(); as current) {
+          <section #candidateBox tabindex="-1" class="comparison mt-3 rounded-xl border-2 border-primary bg-info-soft p-4" aria-live="polite" aria-label="เปรียบเทียบแผนใหม่">
+            <h3 class="font-bold text-blue-950">เปรียบเทียบแผนใหม่</h3>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div class="rounded-lg bg-white p-3"><span class="text-slate-500">แผนเดิม</span><strong class="mt-1 block font-mono text-base">{{ current.totalDistanceKm | number:'1.1-2' }} กม.</strong><span class="mt-1 block">ถึง {{ finishTime(current) }} น.</span><span class="mt-1 inline-flex rounded-full px-2 py-0.5 font-bold" [class.bg-emerald-100]="current.deadlineSafe" [class.text-emerald-800]="current.deadlineSafe" [class.bg-red-100]="!current.deadlineSafe" [class.text-red-800]="!current.deadlineSafe">{{ current.deadlineSafe ? 'ทันเวลา' : 'เกินเวลา' }}</span><span class="mt-1 block font-mono">กำไร {{ current.profit | currency:'THB':'symbol-narrow':'1.0-0' }}</span></div>
+              <div class="rounded-lg bg-white p-3"><span class="text-blue-700">แผนใหม่</span><strong class="mt-1 block font-mono text-base">{{ next.totalDistanceKm | number:'1.1-2' }} กม.</strong><span class="mt-1 block">ถึง {{ finishTime(next) }} น.</span><span class="mt-1 inline-flex rounded-full px-2 py-0.5 font-bold" [class.bg-emerald-100]="next.deadlineSafe" [class.text-emerald-800]="next.deadlineSafe" [class.bg-red-100]="!next.deadlineSafe" [class.text-red-800]="!next.deadlineSafe">{{ next.deadlineSafe ? 'ทันเวลา' : 'เกินเวลา' }}</span><span class="mt-1 block font-mono">กำไร {{ next.profit | currency:'THB':'symbol-narrow':'1.0-0' }}</span></div>
+            </div>
+            @if (!next.deadlineSafe) {
+              <label class="mt-3 flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border border-red-300 bg-red-50 p-3 text-xs font-semibold text-red-900" for="ack-candidate"><input #ackCandidate id="ack-candidate" type="checkbox" class="size-5" name="acknowledgeCandidate" [(ngModel)]="acknowledgeCandidate" />รับทราบว่าแผนใหม่คาดว่าส่งเกิน {{ deadlineLabel() }}</label>
+            }
+            <div class="mt-3 grid grid-cols-2 gap-2"><button class="neu-control min-h-11 rounded-lg text-sm font-bold" type="button" [disabled]="discardingCandidate" (click)="discardCandidate()">{{ discardingCandidate ? 'กำลังทิ้งแผน...' : 'ทิ้งแผนใหม่' }}</button><button class="neu-primary min-h-11 rounded-lg text-sm font-bold" type="button" [disabled]="discardingCandidate" [attr.aria-disabled]="!next.deadlineSafe && !acknowledgeCandidate" [class.opacity-60]="!next.deadlineSafe && !acknowledgeCandidate" (click)="chooseCandidate()">เลือกแผนใหม่</button></div>
+            @if (!next.deadlineSafe && !acknowledgeCandidate) {
+              <p class="mt-2 text-xs font-semibold text-red-800">ติ๊กรับทราบก่อนเลือกแผนใหม่ที่เกินเวลา</p>
+            }
+          </section>
+          }
+        }
+      </div>
+
+      @if (store.plan(); as plan) {
+        <footer class="border-t border-line p-4"><div class="flex items-center justify-between text-sm"><span class="text-slate-500">ความจุที่ใช้ในแผนนี้</span><strong class="font-mono">{{ totalStops(plan) }} / {{ capacity(plan) }} ออเดอร์</strong></div><div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><span class="block h-full rounded-full bg-success" [style.width.%]="capacityPercent(plan)"></span></div></footer>
+      }
+    </aside>
+  </div>
+
+  @if (store.planHistory().length) {
+    <section class="neu-panel mt-4 rounded-xl p-5" aria-labelledby="plan-history-title">
+      <h2 id="plan-history-title" class="font-bold">ประวัติการยืนยันในรอบนี้</h2>
+      <p class="mt-1 text-sm text-slate-600">แสดงเฉพาะในแท็บนี้ ไม่บันทึกหรือส่งข้อมูลให้ไรเดอร์จริง</p>
+      <ol class="mt-3 divide-y divide-line">@for (previous of store.planHistory(); track $index) { <li class="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"><span>แผน {{ previous.version }} · {{ previous.routes.length }} ใบงาน</span><span class="text-slate-600">{{ previous.totalDistanceKm | number:'1.1-2' }} กม. · ประมาณ {{ finishTime(previous) }} น.</span></li> }</ol>
+    </section>
+  }
+
+  @if (store.plan(); as plan) {
+    <section class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <article class="neu-panel rounded-xl p-5"><div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><h2 class="text-lg font-bold">รายรับและต้นทุน</h2><strong class="font-mono text-2xl" [class.text-emerald-700]="plan.profit >= 0" [class.text-red-700]="plan.profit < 0">กำไร {{ plan.profit | currency:'THB':'symbol-narrow':'1.0-0' }}</strong></div><dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4"><div class="rounded-lg bg-surface-subtle p-3"><dt class="text-slate-500">รายได้</dt><dd class="mt-1 font-mono font-bold">{{ plan.revenue | currency:'THB':'symbol-narrow':'1.0-0' }}</dd></div><div class="rounded-lg bg-surface-subtle p-3"><dt class="text-slate-500">ต้นทุนอาหาร</dt><dd class="mt-1 font-mono font-bold">{{ plan.foodCost | currency:'THB':'symbol-narrow':'1.0-0' }}</dd></div><div class="rounded-lg bg-surface-subtle p-3"><dt class="text-slate-500">ค่าเรียกไรเดอร์</dt><dd class="mt-1 font-mono font-bold">{{ callFee(plan) | currency:'THB':'symbol-narrow':'1.0-0' }}</dd></div><div class="rounded-lg bg-surface-subtle p-3"><dt class="text-slate-500">ค่าระยะทาง</dt><dd class="mt-1 font-mono font-bold">{{ distanceFee(plan) | currency:'THB':'symbol-narrow':'1.0-0' }}</dd></div></dl></article>
+      <aside class="rounded-xl border border-line bg-surface-subtle p-5"><h2 class="font-bold">หลักการคำนวณ{{ routingNote() ? ' (แผนจากระบบหลังบ้าน)' : 'เดโม' }}</h2><p class="mt-2 text-sm text-slate-600">{{ routingNote() ?? 'จำกัดไม่เกิน 3 ออเดอร์ต่อไรเดอร์ จัดกลุ่มจุดใกล้กัน แล้วเลือกจุดถัดไปที่ใกล้ที่สุด ระยะทางเป็นเส้นตรง ไม่รวมเส้นถนน จราจร หรือเวลาส่งของ ควรตรวจในแผนที่จริงก่อนใช้งาน' }}</p></aside>
+    </section>
+  }
+</section>

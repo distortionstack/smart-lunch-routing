@@ -1,45 +1,56 @@
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ApiCustomer, ApiCustomerInput } from './customer-api.models';
 
-/**
- * Backend Customers API client — same shape as `RoutePlanApiService`.
- *
- * Base path comes from `environment.apiBaseUrl`; the production domain is
- * never hard-coded here.
- *
- * There is no search endpoint on the backend, so `list()` loads everything
- * and the page filters client-side.
- */
+// รูปแบบข้อมูล customer ที่ backend ส่งกลับมา
+export interface ApiCustomer {
+  id: number;
+  name: string;
+  phone: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+  createdAt?: string;
+  distanceKm?: number;
+}
+
+// ข้อมูลจากฟอร์มสำหรับสร้างลูกค้า
+// ไม่ส่ง id หรือ createdAt เพราะฐานข้อมูลเป็นผู้สร้าง
+export interface CreateCustomerInput {
+  name: string;
+  phone: string;
+  address: string | null;
+  lat: number;
+  lng: number;
+}
+
 @Injectable({ providedIn: 'root' })
-export class CustomerApiService {
+export class CustomersApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBaseUrl}/customers`;
+  private readonly url = `${environment.apiBaseUrl}/customers`;
 
-  /** GET /api/customers */
-  list(): Observable<ApiCustomer[]> {
-    return this.http.get<ApiCustomer[]>(this.baseUrl);
+  // ไม่ระบุคำค้น = โหลดทั้งหมด / ระบุคำค้น = ให้ backend ค้นหา
+  getCustomers(search: string = '') {
+    return this.http.get<ApiCustomer[]>(this.url, {
+      params: { search: search.trim() },
+    });
+  }
+  nearby(radiusKm=1) {
+    return this.http.get<ApiCustomer[]>(`${this.url}/nearby`, {params:{radiusKm}});
+  }
+  // ส่งข้อมูลลูกค้าใหม่ และรับลูกค้าที่บันทึกสำเร็จกลับมา
+  createCustomer(input: CreateCustomerInput) {
+    return this.http.post<ApiCustomer>(this.url, input);
   }
 
-  /** GET /api/customers/:id */
-  get(id: number): Observable<ApiCustomer> {
-    return this.http.get<ApiCustomer>(`${this.baseUrl}/${id}`);
+  // แก้ไขลูกค้าตาม id และรับข้อมูลหลังบันทึกกลับมา
+  updateCustomer(id: string, input: CreateCustomerInput) {
+    return this.http.put<ApiCustomer>(`${this.url}/${id}`, input);
   }
 
-  /** POST /api/customers → 201 */
-  create(payload: ApiCustomerInput): Observable<ApiCustomer> {
-    return this.http.post<ApiCustomer>(this.baseUrl, payload);
-  }
-
-  /** PUT /api/customers/:id */
-  update(id: number, payload: ApiCustomerInput): Observable<ApiCustomer> {
-    return this.http.put<ApiCustomer>(`${this.baseUrl}/${id}`, payload);
-  }
-
-  /** DELETE /api/customers/:id → 204 (empty body) */
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  // ขอให้ backend ลบลูกค้าตาม id
+  // เมื่อลบสำเร็จ API ตอบ 204 โดยไม่มีข้อมูลลูกค้ากลับมา
+  deleteCustomer(id: string) {
+    return this.http.delete<void>(`${this.url}/${id}`);
   }
 }

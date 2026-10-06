@@ -1,0 +1,191 @@
+<section class="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
+  <header class="mb-5 flex flex-wrap justify-end gap-3">
+    <button class="neu-control inline-flex min-h-11 items-center gap-2 rounded-xl px-4 font-bold" type="button"
+      (click)="showOverviewMap = !showOverviewMap">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+      <span>{{ showOverviewMap ? 'ซ่อนแผนที่' : 'ดูตำแหน่งบนแผนที่ (' + apiCustomers().length + ' คน)' }}</span>
+    </button>
+    <button class="neu-primary inline-flex min-h-11 items-center gap-2 rounded-xl px-5 font-bold" type="button"
+      (click)="startCreate()"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        aria-hidden="true">
+        <path stroke-linecap="round" d="M12 5v14M5 12h14" />
+      </svg><span>เพิ่มลูกค้า</span></button>
+  </header>
+
+  @if (showOverviewMap) {
+    <div class="neu-panel mb-5 h-[380px] overflow-hidden rounded-2xl p-2 sm:h-[450px]">
+      <app-delivery-map [shop]="mapShop()" [showShop]="false" [customers]="apiCustomers()" [pickable]="false" />
+    </div>
+  }
+
+  <div [class]="showForm ? 'grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]' : 'grid gap-5'">
+    <article class="neu-panel overflow-hidden rounded-2xl">
+      <div class="flex flex-wrap items-end gap-3 border-b border-white/70 p-5">
+
+        <!-- พิมพ์แล้วค้นหาทันที หรือกด Enter / ปุ่มค้นหา -->
+        <form class="flex min-w-0 w-full max-w-lg items-end gap-2"
+          (ngSubmit)="!loadingCustomers() && !savingCustomer() && deletingCustomerId() === null && loadCustomers()">
+          <label class="block min-w-0 flex-1 text-sm font-semibold text-slate-700" for="customer-list-search">
+            <span class="mb-1.5 block">ค้นหาลูกค้า</span>
+            <input id="customer-list-search" name="search" class="neu-field min-h-11 w-full rounded-xl px-4 text-base"
+              [(ngModel)]="query" (ngModelChange)="onQueryChange()"
+              [disabled]="loadingCustomers() || savingCustomer() || deletingCustomerId() !== null"
+              placeholder="ชื่อ เบอร์โทร หรือที่อยู่" />
+          </label>
+
+          <button class="neu-control min-h-11 rounded-xl px-3 font-semibold" type="submit"
+            [disabled]="loadingCustomers() || savingCustomer() || deletingCustomerId() !== null">
+            ค้นหา
+          </button>
+        </form>
+        <app-nearby-search subject="ลูกค้า" [radiusKm]="nearbyRadius" [active]="nearbyPoint" [busy]="loadingCustomers() || savingCustomer() || deletingCustomerId() !== null" (searched)="searchNearby($event)" (cleared)="clearNearby()" />
+        <span class="ml-auto text-sm text-slate-500" role="status">{{ filteredCustomers().length }} รายการ</span>
+      </div>
+
+      <!-- Show customer (body) -->
+      <div class="divide-y divide-slate-100">
+        @if (loadingCustomers()) {
+        <p class="px-5 py-12 text-center text-slate-600" role="status">
+          กำลังโหลดรายชื่อลูกค้า...
+        </p>
+        } @else if (loadCustomersError()) {
+        <p class="px-5 py-12 text-center text-red-700" role="alert">
+          {{ loadCustomersError() }} <button class="font-bold underline" type="button" (click)="loadCustomers()">ลองใหม่</button>
+        </p>
+        } @else {
+        @for (customer of filteredCustomers(); track customer.id) {
+        <article
+          class="grid gap-3 p-5 transition-colors duration-200 hover:bg-white/25 sm:grid-cols-[44px_minmax(0,1fr)_auto] sm:items-center">
+          <span class="neu-panel-soft grid size-11 place-items-center rounded-full font-bold text-emerald-800"
+            aria-hidden="true">{{ customer.name.slice(0, 1) }}</span>
+          <div class="min-w-0"><strong class="block">{{ customer.name }}</strong><span
+              class="block text-sm text-slate-500">{{ customer.phone }}</span>
+            <p class="mt-1 truncate text-sm text-slate-600">{{ customer.address || 'ยังไม่มีรายละเอียดที่อยู่' }}</p>
+            @if (distances()[customer.id] !== undefined) { <p class="mt-1 text-sm font-semibold text-emerald-800">ระยะ {{ distances()[customer.id].toFixed(3) }} กม.</p> }
+            <span
+              class="mt-2 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">ปักตำแหน่งแล้ว</span>
+          </div>
+          <div class="flex gap-2 sm:justify-end">
+
+            <!-- EDIT BUTTON -->
+
+            <button class="neu-control min-h-11 rounded-xl px-3 text-sm font-semibold" type="button"
+              (click)="edit(customer)">แก้ไข
+            </button>
+
+            <!-- ลบลูกค้าผ่าน API และแสดงสถานะระหว่างรอ -->
+            <button class="neu-control min-h-11 rounded-xl px-3 text-sm font-semibold text-red-700" type="button"
+              [disabled]="savingCustomer() || deletingCustomerId() !== null" (click)="remove(customer)">
+              {{ deletingCustomerId() === customer.id ? 'กำลังลบ...' : 'ลบ' }}
+            </button>
+          </div>
+        </article>
+        } @empty {
+        <div class="px-5 py-12 text-center"><img class="mx-auto mb-5 h-auto w-52"
+            src="assets/illustrations/empty-delivery.webp" width="640" height="426" alt="" role="presentation"
+            loading="lazy" /><strong class="block text-lg">{{ query || nearbyPoint ? 'ไม่พบลูกค้าตามเงื่อนไขนี้' : 'ยังไม่มีข้อมูลลูกค้า'
+            }}</strong>
+          <p class="mt-1 text-sm text-slate-600">{{ query ? 'ลองค้นด้วยชื่อหรือเบอร์โทรอื่น' :
+            'เพิ่มลูกค้าคนแรกเพื่อเริ่มรับออเดอร์' }}</p>
+        </div>
+        }
+        }
+      </div>
+    </article>
+
+    @if (showForm) {
+    <aside class="neu-panel form-panel h-fit rounded-2xl p-5 xl:sticky xl:top-20">
+      <div class="mb-5 flex items-center justify-between">
+        <h2 class="text-xl font-bold">{{ draft.id ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้าใหม่' }}</h2><button
+          class="neu-control min-h-11 rounded-xl px-3 text-sm font-semibold text-slate-700" type="button"
+          (click)="cancel()" aria-label="ปิดแบบฟอร์ม">ปิด</button>
+      </div>
+      <form class="space-y-4" (ngSubmit)="save()" #customerForm="ngForm">
+        <label class="block text-sm font-semibold" for="customer-name">ชื่อลูกค้า <span
+            class="text-red-700">*</span><input id="customer-name"
+            class="neu-field mt-1.5 min-h-11 w-full rounded-xl px-3 text-base" required name="name"
+            [(ngModel)]="draft.name" autocomplete="name" autofocus /></label>
+
+        <!-- PHONE -->
+        <!-- เบอร์มือถือ: ใช้กฎเดียวกับ backend -->
+        <label class="block text-sm font-semibold" for="customer-phone">
+          เบอร์โทร <span class="text-red-700">*</span>
+
+          <input id="customer-phone" class="neu-field mt-1.5 min-h-11 w-full rounded-xl px-3 text-base" required
+            name="phone" [(ngModel)]="draft.phone" inputmode="tel" autocomplete="tel" placeholder="เช่น 081-234-5678"
+            aria-describedby="customer-phone-hint" />
+        </label>
+
+        <p id="customer-phone-hint" class="text-sm text-slate-600">
+          ใช้เบอร์มือถือไทย 10 หลัก ขึ้นต้น 06, 08 หรือ 09
+          ใส่ขีดหรือช่องว่างได้ ระบบจะตัดออกก่อนบันทึก
+        </p>
+      
+        <!-- END OF PHONE -->
+
+        <label class="block text-sm font-semibold" for="customer-address">ที่อยู่ / จุดสังเกต<textarea
+            id="customer-address" class="neu-field mt-1.5 w-full rounded-xl p-3 text-base" name="address"
+            [(ngModel)]="draft.address" rows="2" placeholder="เช่น หอพัก อาคาร หรือจุดนัดรับ"></textarea></label>
+        <div class="border-t border-white/70 pt-4">
+          <h3 class="font-bold">ตำแหน่งจัดส่ง</h3>
+          <p class="text-sm text-slate-600">คลิกบนแผนที่หรือลากหมุดเพื่อระบุตำแหน่ง</p>
+        </div>
+        <label class="block text-sm font-semibold" for="place-query">เลือกตำแหน่งจากลูกค้าที่โหลดไว้<input
+            id="place-query" class="neu-field mt-1.5 min-h-11 w-full rounded-xl px-3 text-base" name="placeQuery"
+            [(ngModel)]="placeQuery" placeholder="ชื่อหรือที่อยู่" autocomplete="off" /></label>
+        @if (placeMatches().length) { <div class="neu-inset divide-y divide-white/70 rounded-xl">@for (place of
+          placeMatches(); track place.id) { <button
+            class="block min-h-11 w-full px-3 py-2 text-left transition-colors hover:bg-white/30" type="button"
+            (click)="selectPlace(place)"><strong class="block text-sm">{{ place.name }}</strong><span
+              class="text-xs text-slate-600">{{ place.address }}</span></button> }</div> }
+        <p class="text-xs text-slate-500">ถ้าอยู่ที่เดียวกับลูกค้าเดิม พิมพ์ชื่อเพื่อดึงตำแหน่งมาใช้ได้เลย
+        </p>
+        <div class="neu-inset h-[320px] overflow-hidden rounded-2xl p-1"><app-delivery-map [shop]="mapShop()" [showShop]="false" [customers]="apiCustomers()"
+            [pickable]="true" [selectedLocation]="pickerLocation" (locationPicked)="setLocation($event)" /></div>
+        @if (locationSelected) { <div
+          class="location-confirm flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900">
+          <span>เลือกตำแหน่งแล้ว</span><button class="min-h-11 px-2 underline" type="button"
+            (click)="clearLocation()">ล้างหมุด</button>
+        </div> } @else { <p class="rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+          ยังไม่ได้ปักตำแหน่งจัดส่ง</p> }
+        <button class="min-h-11 text-sm font-semibold text-emerald-800 underline" type="button"
+          (click)="showCoordinates = !showCoordinates" [attr.aria-expanded]="showCoordinates"
+          aria-controls="manual-coordinates">{{ showCoordinates ? 'ซ่อน' : 'ระบุ' }}พิกัดด้วยตัวเลข</button>
+        @if (showCoordinates) { <div id="manual-coordinates" class="neu-inset space-y-3 rounded-2xl p-4">
+          <div class="grid grid-cols-2 gap-3"><label class="text-sm font-semibold" for="manual-lat">ละติจูด<input
+                id="manual-lat" class="neu-field mt-1 min-h-11 w-full rounded-xl px-2 text-base" type="number"
+                step="any" name="manualLat" [(ngModel)]="manualLat" inputmode="decimal" /></label><label
+              class="text-sm font-semibold" for="manual-lng">ลองจิจูด<input id="manual-lng"
+                class="neu-field mt-1 min-h-11 w-full rounded-xl px-2 text-base" type="number" step="any"
+                name="manualLng" [(ngModel)]="manualLng" inputmode="decimal" /></label></div><button
+            class="neu-control min-h-11 w-full rounded-xl px-3 font-bold" type="button"
+            (click)="applyCoordinates()">ใช้ตำแหน่งนี้</button>
+        </div> }
+        @if (error) { <p class="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800" role="alert"
+          aria-live="assertive">{{ error }}</p> }
+        <!-- ปุ่มท้ายฟอร์ม: ยกเลิกและบันทึกข้อมูลลูกค้า -->
+        <div class="flex justify-end gap-3 border-t border-white/70 pt-4">
+
+          <!-- ปิดฟอร์มโดยไม่บันทึก -->
+          <button class="neu-control min-h-11 rounded-xl px-4 font-bold" type="button" [disabled]="savingCustomer()"
+            (click)="cancel()">
+            ยกเลิก
+          </button>
+
+          <!-- ส่งฟอร์มไปเรียก save() และห้ามกดซ้ำระหว่างรอ API -->
+          <button class="neu-primary min-h-11 rounded-xl px-4 font-bold" type="submit"
+            [disabled]="customerForm.invalid || savingCustomer()">
+            {{ savingCustomer() ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+          </button>
+
+        </div>
+      </form>
+    </aside>
+    }
+  </div>
+  @if (feedback) { <div
+    class="neu-panel fixed bottom-24 left-1/2 z-[100] w-[min(92vw,420px)] -translate-x-1/2 rounded-2xl px-5 py-4 text-center font-semibold text-slate-900 lg:bottom-6"
+    role="status" aria-live="polite">{{ feedback }}</div> }
+</section>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">ครัวเที่ยงตรง</title>
+  <desc id="desc">กล่องอาหารและเส้นทางจัดส่ง</desc>
+  <rect width="64" height="64" rx="16" fill="#0053fd"/>
+  <path d="M15 27h29l-3 20H18l-3-20Z" fill="#f4f8fb"/>
+  <path d="M20 22h19a5 5 0 0 1 5 5H15a5 5 0 0 1 5-5Z" fill="#9fc0ff"/>
+  <path d="M23 35c5-6 10 6 15 0" fill="none" stroke="#0053fd" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="48" cy="17" r="5" fill="#f4f8fb"/>
+  <path d="M42 43c10-4 15-11 9-21" fill="none" stroke="#9fc0ff" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 5"/>
+</svg>

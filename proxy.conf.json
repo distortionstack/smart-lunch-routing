@@ -1,7 +1,7 @@
 {
   "/api": {
-    "target": "http://localhost:3000",
-    "secure": false,
+    "target": "https://smart-lunch-api.f0kki0.me",
+    "secure": true,
     "changeOrigin": true
   }
 }

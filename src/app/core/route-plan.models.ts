@@ -18,6 +18,8 @@ export interface RouteStopModel {
   distanceFromPreviousKm: number;
   travelTimeFromPreviousMin: number;
   estimatedArrivalTime: string;
+  deliveryStatus: 'WAITING' | 'DELIVERING' | 'DELIVERED';
+  geometry?: GeoJsonLineString | null;
 }
 
 export interface GeoJsonLineString {
@@ -26,6 +28,8 @@ export interface GeoJsonLineString {
 }
 
 export interface DeliveryRouteModel {
+  acknowledgedAt?: string | null;
+  status?: 'WAITING'|'DELIVERING'|'COMPLETED'|'CANCELLED';
   jobId?: number;
   jobCode?: string;
   riderIndex: number;
@@ -45,6 +49,9 @@ export interface DeliveryRouteModel {
 export type RoutePlanStatus = 'GENERATED' | 'SELECTED' | 'REJECTED';
 
 export interface RoutePlanModel {
+  startTime?: string;
+  deliveryDeadline?: string;
+  shop?: import('./shop-settings-api.service').ShopSettings;
   routePlanId?: number;
   planDate: string;
   status: RoutePlanStatus;

@@ -18,6 +18,8 @@ export interface Order {
 }
 
 export interface Rider {
+  workStatus?: 'READY'|'BUSY'|'DELIVERING'|'PAUSED'|'UNCONFIGURED';
+  assignedOrdersToday?: number;
   id: string;
   name: string;
   phone: string;
@@ -31,9 +33,12 @@ export interface RouteStop {
   sequence: number;
   distanceFromPreviousKm: number;
   arrivalTime: string;
+  deliveryStatus?: 'WAITING' | 'DELIVERING' | 'DELIVERED';
 }
 
 export interface RiderRoute {
+  estimatedStartTime?: string;
+  estimatedFinishTime?: string;
   rider: Rider;
   stops: RouteStop[];
   totalBoxes: number;
@@ -47,6 +52,10 @@ export interface RiderRoute {
 }
 
 export interface RoutePlan {
+  startTime?: string;
+  deliveryDeadline?: string;
+  shop?: import('./shop-settings-api.service').ShopSettings;
+  estimatedFinishTime?: string;
   version: number;
   generatedAt: string;
   routes: RiderRoute[];

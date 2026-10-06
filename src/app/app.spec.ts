@@ -16,11 +16,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render the product navigation', async () => {
+  it('hides owner navigation before login', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.brand-copy')?.textContent).toContain('ครัวเที่ยงตรง');
-    expect(compiled.querySelectorAll('nav a').length).toBe(6);
+    expect(compiled.querySelector('aside')).toBeNull();
   });
 });

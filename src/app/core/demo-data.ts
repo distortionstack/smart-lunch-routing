@@ -59,12 +59,12 @@ export const DEMO_ORDERS: Order[] = [
 ];
 
 export const DEMO_RIDERS: Rider[] = [
-  { id: 'r-01', name: 'อนุชา แก้วคำ', phone: '086-235-7140', jobCode: 'LUNCH-101', color: '#9f2f2d' },
-  { id: 'r-02', name: 'กมลชนก พูลผล', phone: '091-684-2035', jobCode: 'LUNCH-202', color: '#346538' },
-  { id: 'r-03', name: 'ธีรภัทร ยอดเมือง', phone: '083-459-6217', jobCode: 'LUNCH-303', color: '#1f6c9f' },
-  { id: 'r-04', name: 'ศุภชัย อินทร์งาม', phone: '096-273-8401', jobCode: 'LUNCH-404', color: '#956400' },
-  { id: 'r-05', name: 'มานพ ใจดี', phone: '080-222-0005', jobCode: 'LUNCH-505', color: '#794995' },
-  { id: 'r-06', name: 'ปัทมา วงศ์ศรี', phone: '080-222-0006', jobCode: 'LUNCH-606', color: '#9d4b68' },
+  { id: 'r-01', name: 'อนุชา แก้วคำ', phone: '086-235-7140', jobCode: 'LUNCH-101', color: '#d13b45' },
+  { id: 'r-02', name: 'กมลชนก พูลผล', phone: '091-684-2035', jobCode: 'LUNCH-202', color: '#16865c' },
+  { id: 'r-03', name: 'ธีรภัทร ยอดเมือง', phone: '083-459-6217', jobCode: 'LUNCH-303', color: '#0053fd' },
+  { id: 'r-04', name: 'ศุภชัย อินทร์งาม', phone: '096-273-8401', jobCode: 'LUNCH-404', color: '#c96a16' },
+  { id: 'r-05', name: 'มานพ ใจดี', phone: '080-222-0005', jobCode: 'LUNCH-505', color: '#7549c7' },
+  { id: 'r-06', name: 'ปัทมา วงศ์ศรี', phone: '080-222-0006', jobCode: 'LUNCH-606', color: '#0b7a88' },
   { id: 'r-07', name: 'ชัยวัฒน์ ศรีสุข', phone: '080-222-0007', jobCode: 'LUNCH-707', color: '#4e7472' },
   { id: 'r-08', name: 'วริศรา แสนดี', phone: '080-222-0008', jobCode: 'LUNCH-808', color: '#a25228' },
   { id: 'r-09', name: 'ธีรวุฒิ นาคทอง', phone: '080-222-0009', jobCode: 'LUNCH-909', color: '#5967a2' },

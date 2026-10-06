@@ -1,0 +1,116 @@
+<section class="mx-auto max-w-[1480px] p-4 sm:p-6 lg:p-8">
+  <header class="mb-5 flex justify-end">
+    <button class="neu-primary inline-flex min-h-11 items-center gap-2 rounded-xl px-5 font-bold" type="button"
+      (click)="startCreate()"><svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        aria-hidden="true">
+        <path stroke-linecap="round" d="M12 5v14M5 12h14" />
+      </svg><span>เพิ่มไรเดอร์</span></button>
+  </header>
+
+  <div [class]="showForm ? 'grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]' : 'grid gap-5'">
+    <article class="neu-panel overflow-hidden rounded-2xl">
+      <div class="flex flex-col gap-3 border-b border-white/70 p-5 sm:flex-row sm:items-end sm:justify-between">
+        <label class="block w-full max-w-lg text-sm font-semibold text-slate-700" for="rider-list-search">
+          <span class="mb-1.5 block">ค้นหาไรเดอร์</span>
+          <input id="rider-list-search" name="search" class="neu-field min-h-11 w-full rounded-xl px-4 text-base"
+            [(ngModel)]="query" [disabled]="loading() || saving()" placeholder="ชื่อ หรือเบอร์โทร" />
+        </label>
+        <span class="text-sm text-slate-500">{{ filteredRiders().length }} รายการ · พร้อมงาน {{ availableCount() }} คน</span>
+      </div>
+
+      <div class="divide-y divide-slate-100">
+        @if (loading()) {
+        <p class="px-5 py-12 text-center text-slate-600" role="status">
+          กำลังโหลดรายชื่อไรเดอร์...
+        </p>
+        } @else if (error() && !showForm) {
+        <p class="px-5 py-12 text-center text-red-700" role="alert">
+          {{ error() }} <button class="font-bold underline" type="button" (click)="reload()">ลองใหม่</button>
+        </p>
+        } @else {
+        @for (rider of filteredRiders(); track rider.id) {
+        <article
+          class="grid gap-3 p-5 transition-colors duration-200 hover:bg-white/25 sm:grid-cols-[44px_minmax(0,1fr)_auto] sm:items-center">
+          <span class="neu-panel-soft grid size-11 place-items-center rounded-full font-bold text-emerald-800"
+            aria-hidden="true">{{ rider.name.slice(0, 1) }}</span>
+          <div class="min-w-0"><strong class="block">{{ rider.name }}</strong><span
+              class="block text-sm text-slate-500">{{ rider.username ? '@' + rider.username : 'ยังไม่มีชื่อผู้ใช้' }} · {{ rider.phone || 'ยังไม่มีเบอร์โทร' }}</span>
+            <span
+              class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+              [class.bg-emerald-50]="rider.workStatus === 'READY'" [class.text-emerald-800]="rider.workStatus === 'READY'"
+              [class.bg-slate-100]="!rider.isAvailable" [class.text-slate-500]="!rider.isAvailable">{{
+              workStatusLabel(rider) }}</span>
+          </div>
+          <div class="flex gap-2 sm:justify-end">
+            <button class="neu-control min-h-11 rounded-xl px-3 text-sm font-semibold" type="button" [disabled]="saving()" (click)="openAccount(rider)">บัญชี</button>
+            <button class="neu-control min-h-11 rounded-xl px-3 text-sm font-semibold" type="button"
+              [disabled]="saving()" (click)="edit(rider)">แก้ไข
+            </button>
+            <button class="neu-control min-h-11 rounded-xl px-3 text-sm font-semibold text-red-700" type="button"
+              [disabled]="saving()" (click)="remove(rider)">ลบ
+            </button>
+          </div>
+        </article>
+        } @empty {
+        <div class="px-5 py-12 text-center"><img class="mx-auto mb-5 h-auto w-52"
+            src="assets/illustrations/empty-delivery.webp" width="640" height="426" alt="" role="presentation"
+            loading="lazy" /><strong class="block text-lg">{{ query ? 'ไม่พบไรเดอร์ที่ค้นหา' : 'ยังไม่มีข้อมูลไรเดอร์'
+            }}</strong>
+          <p class="mt-1 text-sm text-slate-600">{{ query ? 'ลองค้นด้วยชื่อหรือเบอร์โทรอื่น' :
+            'เพิ่มไรเดอร์คนแรกเพื่อเริ่มรับงาน' }}</p>
+        </div>
+        }
+        }
+      </div>
+    </article>
+
+    @if (showForm) {
+    <aside class="neu-panel form-panel h-fit rounded-2xl p-5 xl:sticky xl:top-20">
+      <div class="mb-5 flex items-center justify-between">
+        <h2 class="text-xl font-bold">{{ draft.id === undefined ? 'เพิ่มไรเดอร์ใหม่' : 'แก้ไขข้อมูลไรเดอร์' }}</h2><button
+          class="neu-control min-h-11 rounded-xl px-3 text-sm font-semibold text-slate-700" type="button"
+          (click)="cancel()" aria-label="ปิดแบบฟอร์ม">ปิด</button>
+      </div>
+      <form class="space-y-4" (ngSubmit)="save()" #riderForm="ngForm">
+        <label class="block text-sm font-semibold" for="rider-name">ชื่อไรเดอร์ <span
+            class="text-red-700">*</span><input id="rider-name"
+            class="neu-field mt-1.5 min-h-11 w-full rounded-xl px-3 text-base" required name="name"
+            [(ngModel)]="draft.name" autocomplete="off" autofocus maxlength="150" /></label>
+
+        <label class="block text-sm font-semibold" for="rider-phone">เบอร์โทร<input id="rider-phone"
+            class="neu-field mt-1.5 min-h-11 w-full rounded-xl px-3 text-base" name="phone"
+            [(ngModel)]="draft.phone" inputmode="tel" autocomplete="tel" placeholder="เช่น 081-234-5678"
+            maxlength="20" /></label>
+
+        <label class="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold" for="rider-available">
+          <input id="rider-available" type="checkbox" class="size-5" name="isAvailable"
+            [(ngModel)]="draft.isAvailable" />
+          พร้อมรับงาน
+        </label>
+
+        @if (error()) { <p class="rounded-lg bg-red-50 p-3 text-sm font-semibold text-red-800" role="alert"
+          aria-live="assertive">{{ error() }}</p> }
+        <div class="flex justify-end gap-3 border-t border-white/70 pt-4">
+          <button class="neu-control min-h-11 rounded-xl px-4 font-bold" type="button" [disabled]="saving()"
+            (click)="cancel()">
+            ยกเลิก
+          </button>
+          <button class="neu-primary min-h-11 rounded-xl px-4 font-bold" type="submit"
+            [disabled]="riderForm.invalid || saving()">
+            {{ saving() ? 'กำลังบันทึก...' : 'บันทึกข้อมูล' }}
+          </button>
+        </div>
+      </form>
+    </aside>
+    }
+  </div>
+  @if (accountRider; as rider) { <div class="neu-panel mt-5 max-w-lg rounded-2xl p-5"><h2 class="text-lg font-bold">บัญชีไรเดอร์ {{ rider.name }}</h2><p class="mt-1 text-sm text-slate-600">ตั้งชื่อผู้ใช้และรหัสผ่านให้ไรเดอร์ ชื่อผู้ใช้ใช้ตัวอักษรอังกฤษขึ้นต้น ตามด้วยตัวเลข จุด ขีด หรือขีดล่าง รวม 3–40 ตัวอักษร การบันทึกจะยกเลิก session เก่า</p>
+    <label class="mt-4 grid gap-1 text-sm font-semibold">ชื่อผู้ใช้<input class="neu-field min-h-12 rounded-xl px-3" autocomplete="off" [(ngModel)]="accountUsername" maxlength="40" /></label>
+    <label class="mt-4 grid gap-1 text-sm font-semibold">{{ rider.hasPassword ? 'รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)' : 'รหัสผ่านเริ่มต้น' }}<input class="neu-field min-h-12 rounded-xl px-3" type="password" autocomplete="new-password" [(ngModel)]="newPassword" /></label>
+    <p class="mt-1 text-xs text-slate-600">รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัวอักษร</p>
+    @if (error()) { <p class="mt-3 text-sm text-red-800" role="alert">{{ error() }}</p> }
+    <div class="mt-4 flex gap-2"><button class="neu-primary min-h-11 rounded-xl px-4 font-bold" type="button" [disabled]="!accountUsername.trim() || (!rider.hasPassword && newPassword.length < 12) || (newPassword.length > 0 && newPassword.length < 12) || saving()" (click)="saveAccount()">บันทึกบัญชี</button><button class="neu-control min-h-11 rounded-xl px-4" type="button" (click)="accountRider = null">ยกเลิก</button></div></div> }
+  @if (feedback) { <div
+    class="neu-panel fixed bottom-24 left-1/2 z-[100] w-[min(92vw,420px)] -translate-x-1/2 rounded-2xl px-5 py-4 text-center font-semibold text-slate-900 lg:bottom-6"
+    role="status" aria-live="polite">{{ feedback }}</div> }
+</section>
