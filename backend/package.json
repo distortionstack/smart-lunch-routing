@@ -2,7 +2,10 @@
   "name": "smart-lunch-routing-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Express + TypeScript + MySQL (Aiven) backend for smart-lunch-routing. First pass: clean MVC + Service + Domain skeleton.",
+  "engines": {
+    "node": ">=20"
+  },
+  "description": "Express + TypeScript + TiDB Cloud MySQL-compatible backend for smart-lunch-routing.",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
@@ -13,10 +16,21 @@
     "test:watch": "vitest",
     "db:migrate": "tsx scripts/run-sql.ts database/migrations/001_initial_schema.sql",
     "db:migrate:routing": "tsx scripts/run-sql.ts database/migrations/002_routing_metadata.sql",
-    "db:seed": "tsx scripts/run-sql.ts database/seeds/001_seed.sql",
-    "verify:live-osrm": "tsx scripts/live-verify-osrm.ts"
+    "db:migrate:simulation": "tsx scripts/run-sql.ts database/migrations/003_simulated_orders.sql",
+    "db:migrate:cost-formula": "tsx scripts/run-sql.ts database/migrations/004_rider_cost_formula.sql",
+    "db:migrate:accounts": "tsx scripts/migrate-accounts.ts",
+    "db:migrate:review": "tsx scripts/migrate-review.ts",
+    "db:migrate:dispatch": "tsx scripts/migrate-dispatch.ts",
+    "db:migrate:remove-unused-columns": "tsx scripts/remove-unused-null-columns.ts",
+    "db:create-owner": "tsx scripts/create-owner.ts",
+    "db:prune-drafts": "tsx scripts/prune-draft-plans.ts",
+    "db:seed": "tsx scripts/init-shop-settings.ts",
+    "verify:live-osrm": "tsx scripts/live-verify-osrm.ts",
+    "db:init-settings": "tsx scripts/init-shop-settings.ts",
+    "db:clear": "tsx scripts/clear-database.ts"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",

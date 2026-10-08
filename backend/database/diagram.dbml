@@ -1,0 +1,194 @@
+// Generated from the connected TiDB database information_schema.
+// Read-only metadata query; no application rows were accessed.
+// Excludes the retired legacy deliveries table.
+// Database: smart_lunch_route
+// Generated at: 2026-10-08T11:23:27.939Z
+
+Project smart_lunch_route {
+  database_type: 'MySQL'
+  Note: 'Live TiDB schema snapshot. Regenerate with npx tsx scripts/generate-live-diagram.ts.'
+}
+
+Table admin_users [note: 'Collation: utf8mb4_unicode_ci'] {
+  admin_user_id "int unsigned" [pk, not null, increment]
+  username "varchar(100)" [not null]
+  display_name "varchar(150)"
+  password_hash "varchar(255)" [not null, note: 'Store a bcrypt/argon2 hash only; never a plain-text password.']
+  role "enum('OWNER','ADMIN')" [not null, default: 'OWNER']
+  is_active "tinyint(1)" [not null, default: 1]
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+
+  indexes {
+    is_active [name: 'idx_admin_users_active']
+    username [unique, name: 'uq_admin_users_username']
+  }
+}
+
+Table customers [note: 'Collation: utf8mb4_unicode_ci'] {
+  customer_id "int unsigned" [pk, not null, increment]
+  name "varchar(150)" [not null]
+  phone "varchar(30)" [not null]
+  address "varchar(500)"
+  latitude "decimal(10,7)" [not null]
+  longitude "decimal(10,7)" [not null]
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+
+  indexes {
+    (latitude, longitude) [name: 'idx_customers_location']
+    name [name: 'idx_customers_name']
+    phone [unique, name: 'uq_customers_phone']
+  }
+}
+
+Table riders [note: 'Collation: utf8mb4_unicode_ci'] {
+  rider_id "int unsigned" [pk, not null, increment]
+  rider_name "varchar(150)" [not null]
+  phone "varchar(30)"
+  password_hash "varchar(255)" [note: 'Nullable because the current source only uses rider CRUD/job codes; fill when rider login is implemented.']
+  is_available "tinyint(1)" [not null, default: 1]
+  status "enum('ACTIVE','INACTIVE','SUSPENDED')" [not null, default: 'ACTIVE']
+  max_box_capacity "int unsigned" [not null, default: 10]
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+  login_enabled "tinyint(1)" [not null, default: 1]
+  username "varchar(100)"
+
+  indexes {
+    (is_available, status) [name: 'idx_riders_available']
+    phone [unique, name: 'uq_riders_phone']
+    username [unique, name: 'uq_riders_username']
+  }
+}
+
+Table orders [note: 'Collation: utf8mb4_unicode_ci'] {
+  order_id "int unsigned" [pk, not null, increment]
+  customer_id "int unsigned" [not null]
+  order_date "date" [not null]
+  box_count "int unsigned" [not null]
+  status "enum('PENDING','PLANNED','ASSIGNED','DELIVERING','DELIVERED','CANCELLED')" [not null, default: 'PENDING']
+  delivery_deadline "time" [not null, default: '12:30:00']
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+  is_simulated "tinyint(1)" [not null, default: 0]
+
+  indexes {
+    customer_id [name: 'idx_orders_customer']
+    (order_date, order_id) [name: 'idx_orders_date_id']
+    is_simulated [name: 'idx_orders_simulated']
+    (status, order_date) [name: 'idx_orders_status_date']
+  }
+}
+
+Table shop_settings [note: 'Collation: utf8mb4_unicode_ci'] {
+  setting_id "tinyint unsigned" [pk, not null]
+  shop_name "varchar(150)" [not null]
+  latitude "decimal(10,7)" [not null]
+  longitude "decimal(10,7)" [not null]
+  delivery_start_time "time" [not null, default: '11:30:00']
+  delivery_deadline "time" [not null, default: '12:30:00']
+  max_orders_per_rider "int unsigned" [not null, default: 3]
+  rider_speed_kmh "decimal(6,2)" [not null, default: 30.00]
+  box_sale_price "decimal(10,2)" [not null, default: 65.00]
+  box_food_cost "decimal(10,2)" [not null, default: 40.00]
+  rider_base_cost "decimal(10,2)" [not null, default: 15.00]
+  rider_cost_per_km "decimal(10,2)" [not null, default: 2.00]
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+  stop_service_minutes "int" [not null, default: 0]
+}
+
+Table route_plans [note: 'Collation: utf8mb4_unicode_ci'] {
+  route_plan_id "int unsigned" [pk, not null, increment]
+  plan_date "date" [not null]
+  start_time "time" [not null]
+  estimated_finish_time "time"
+  rider_count "int unsigned"
+  total_distance_km "decimal(10,2)"
+  total_delivery_cost "decimal(10,2)"
+  total_revenue "decimal(10,2)"
+  total_food_cost "decimal(10,2)"
+  estimated_profit "decimal(10,2)"
+  status "enum('GENERATED','SELECTED','REJECTED')" [not null, default: 'GENERATED']
+  routing_source "enum('ROAD','HAVERSINE')"
+  approximate "tinyint(1)" [not null, default: 0]
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+  input_snapshot "json"
+
+  indexes {
+    (plan_date, status) [name: 'idx_route_plans_date_status']
+    status [name: 'idx_route_plans_status']
+  }
+}
+
+Table delivery_jobs [note: 'Collation: utf8mb4_unicode_ci'] {
+  delivery_job_id "int unsigned" [pk, not null, increment]
+  route_plan_id "int unsigned" [not null]
+  rider_id "int unsigned"
+  job_code "varchar(50)" [not null, note: 'Rider-facing job code used by the mobile job sheet flow.']
+  total_orders "int unsigned" [not null, default: 0]
+  total_boxes "int unsigned" [not null, default: 0]
+  total_distance_km "decimal(10,2)"
+  estimated_duration_min "int unsigned"
+  estimated_start_time "time"
+  estimated_finish_time "time"
+  delivery_cost "decimal(10,2)"
+  route_geometry "json" [note: 'GeoJSON LineString from shop to ordered stops; coordinates are [lng, lat].']
+  status "enum('ASSIGNED','DELIVERING','DELIVERED','CANCELLED','WAITING','COMPLETED')" [not null, default: 'ASSIGNED']
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+  acknowledged_at "datetime"
+  assigned_at "datetime"
+
+  indexes {
+    (rider_id, status) [name: 'idx_delivery_jobs_rider_status']
+    route_plan_id [name: 'idx_delivery_jobs_route_plan']
+    job_code [unique, name: 'uq_delivery_jobs_job_code']
+  }
+}
+
+Table delivery_job_orders [note: 'Collation: utf8mb4_unicode_ci'] {
+  delivery_job_order_id "int unsigned" [pk, not null, increment]
+  delivery_job_id "int unsigned" [not null]
+  order_id "int unsigned" [not null]
+  stop_sequence "int unsigned" [not null]
+  distance_from_previous_km "decimal(10,2)"
+  travel_time_from_previous_min "int unsigned"
+  estimated_arrival_time "time"
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at "datetime" [not null, default: `CURRENT_TIMESTAMP`, note: 'DEFAULT_GENERATED on update CURRENT_TIMESTAMP']
+  leg_geometry "json"
+
+  indexes {
+    order_id [name: 'idx_delivery_job_orders_order']
+    (delivery_job_id, order_id) [unique, name: 'uq_delivery_job_orders_order']
+    (delivery_job_id, stop_sequence) [unique, name: 'uq_delivery_job_orders_sequence']
+  }
+}
+
+Table auth_sessions [note: 'Collation: utf8mb4_0900_ai_ci'] {
+  token_hash "char(64)" [pk, not null]
+  actor_type "enum('OWNER','RIDER')" [not null]
+  actor_id "int" [not null]
+  expires_at "datetime" [not null]
+  created_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    expires_at [name: 'idx_auth_sessions_expiry']
+  }
+}
+
+Table auth_login_attempts [note: 'Collation: utf8mb4_0900_ai_ci'] {
+  subject_hash "char(64)" [pk, not null]
+  failed_count "int" [not null, default: 0]
+  window_started_at "datetime" [not null, default: `CURRENT_TIMESTAMP`]
+  blocked_until "datetime"
+}
+
+Ref fk_delivery_job_orders_job: delivery_job_orders.delivery_job_id > delivery_jobs.delivery_job_id [delete: cascade]
+Ref fk_delivery_job_orders_order: delivery_job_orders.order_id > orders.order_id
+Ref fk_delivery_jobs_route_plan: delivery_jobs.route_plan_id > route_plans.route_plan_id [delete: cascade]
+Ref fk_jobs_rider: delivery_jobs.rider_id > riders.rider_id
+Ref fk_orders_customer: orders.customer_id > customers.customer_id

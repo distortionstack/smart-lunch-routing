@@ -1,7 +1,9 @@
-# Backend — Smart Lunch Routing (first pass)
+# Backend — Smart Lunch Routing
 
-Express + TypeScript + MySQL (`mysql2/promise`) skeleton using
+Express + TypeScript + TiDB Cloud MySQL-compatible API using
 **MVC + Service Layer + Domain Layer**.
+
+สมาชิกทีมที่เพิ่งเริ่มใช้ Git ดูขั้นตอนได้จาก [คู่มือ Git และ GitHub ภาษาไทย](GIT_GUIDE_TH.md)
 
 ## Architecture
 
@@ -18,21 +20,21 @@ Domain        business rules & algorithms (`src/domain/`)
   ↓           (only when business rules are needed; plain CRUD skips Domain)
 Models        database access / persistence (`src/models/`)
   ↓
-MySQL         connection config (`src/database/`)
+MySQL pool    connection config (`src/database/`)
   ↓
-Aiven MySQL   credentials via environment variables, never in source
+TiDB Cloud    credentials via environment variables, never in source
 ```
 
 - **MVC** organizes HTTP/data flow (routes → controllers → models).
 - **Service layer** holds application workflows (controller → service → model).
 - **Domain layer** holds business rules and routing algorithms
   (`domain/delivery/`, `domain/routing/`).
-- **MySQL** is hosted on Aiven; all connection values come from env vars.
+- **TiDB Cloud** is the runtime MySQL-compatible database; all connection values come from environment variables.
 
 Example CRUD flow (no Domain needed):
 
 ```
-POST /api/customers → CustomerController → CustomerService → CustomerModel → MySQL
+POST /api/customers → CustomerController → CustomerService → CustomerModel → TiDB
 ```
 
 Example planning flow (Domain involved):
@@ -40,22 +42,17 @@ Example planning flow (Domain involved):
 ```
 POST /api/route-plans/generate → RoutePlanController → RoutePlanningService
   → OsrmTableProvider (or Haversine fallback) → cluster → sequence
-  → deadline gate → cost → RoutePlanModel → MySQL
-```
-
-Legacy demo flow (kept, payload-based, no DB):
-
-```
-POST /api/deliveries/plan → DeliveryController → DeliveryService → RoutePlanner
+  → deadline gate → cost → RoutePlanModel → TiDB
 ```
 
 ## Structure
 
-`backend/src/` mirrors the requested `src/` layout, placed under `backend/`
-so it does not collide with the existing Angular `src/` app:
+The backend follows the controller/data-access separation taught in the
+NodeJS Web API (TS) vault, with service and domain layers retained for
+non-trivial business rules:
 
 ```
-backend/src/
+src/
 ├── controllers/   customer/order/rider/delivery.controller.ts
 ├── models/        customer/order/rider/delivery.model.ts
 ├── routes/        customer/order/rider/delivery.routes.ts
@@ -85,28 +82,28 @@ npm.cmd install
 npm.cmd start
 ```
 
-Backend (first pass — works without a database; DB routes return 503 until env is set):
+Backend (the health endpoint works without a database; DB routes return 503 until env is set):
 
 ```powershell
-cd backend
-npm install
+cd BackEnd\smart-lunch-routing-backend
+npm.cmd install
 copy .env.example .env
-npm run dev
+npm.cmd run dev
 ```
 
 Other backend commands:
 
 ```powershell
-npm test
-npm run typecheck
-npm run build
-npm run start
+npm.cmd test
+npm.cmd run typecheck
+npm.cmd run build
+npm.cmd run start
 ```
 
 Live OSRM verification (opt-in, real network, never part of `npm test`):
 
 ```powershell
-npm run verify:live-osrm
+npm.cmd run verify:live-osrm
 ```
 
 Health check: `GET http://localhost:3000/api/health`
@@ -114,25 +111,163 @@ Health check: `GET http://localhost:3000/api/health`
 ## Endpoints
 
 - `GET/POST /api/customers`, `GET/PUT/DELETE /api/customers/:id`
-- `GET/POST /api/orders` (`?status=&date=` supported), `GET/PUT/DELETE /api/orders/:id`
+- `GET /api/customers?search=สมชาย` searches any part of the stored name
+- `GET /api/customers/nearby?lat=&lng=&radiusKm=` (`radiusKm` defaults to 1)
+- `GET/POST /api/orders` (`?status=&date=&customerId=` supported), `GET/PUT/DELETE /api/orders/:id`
+- `GET /api/orders/nearby?lat=&lng=&radiusKm=` (`radiusKm` defaults to 2)
+- `POST /api/orders/simulate` with optional `{ "count": 25, "orderDate": "YYYY-MM-DD" }`
+- `DELETE /api/orders/simulated` deletes only rows created by the simulation endpoint
 - `GET/POST /api/riders` (`?available=true` supported), `GET/PUT /api/riders/:id`
 - `POST /api/route-plans/generate` `{planDate}` → 201 RoutePlan (new plan each call)
 - `POST /api/route-plans/recalculate` `{planDate}` → 201 deterministic alternative plan
 - `GET /api/route-plans?date=` → plan summaries
 - `GET /api/route-plans/:id` → full plan with jobs, stops, geometry
 - `POST /api/route-plans/:id/select` → SELECTED + orders move PENDING → PLANNED
-- Legacy demo (kept): `POST /api/deliveries/plan`, `POST /api/deliveries/plan-from-database`
+- `POST /api/auth/login` creates an owner or rider session; `GET /api/auth/me` checks it; `POST /api/auth/logout` revokes it.
+- `PUT /api/auth/password` lets a signed-in rider change their own password.
+- `GET /api/my-jobs?date=YYYY-MM-DD` returns only the signed-in rider's selected jobs.
+- `POST /api/my-jobs/:jobId/stops/:orderId/deliver` checks rider ownership inside the delivery transaction.
+- `PUT /api/riders/:id/password` lets an owner set or reset a rider password.
+- `PUT /api/riders/:id/account` lets an owner set a unique rider username and optional new password; it revokes existing sessions.
 
 Without DB credentials, DB-backed routes answer 503; bad `planDate` answers
 400; infeasible/no-order generations answer 422. Docs: `docs/distance-domain.md`,
 `docs/routing-pipeline.md`.
 
+## Configuration
+
+Copy `.env.example` to `.env`, then fill in local values. Do not commit `.env`.
+
+Required TiDB Cloud runtime variables:
+
+```env
+DB_HOST=
+DB_PORT=4000
+DB_USER=
+DB_PASSWORD=
+DB_NAME=smart_lunch_route
+DB_SSL=true
+DB_SSL_CA_PATH=./certs/isrgrootx1.pem
+```
+
+Use the application database user for runtime. Do not use TiDB root/admin as
+`DB_USER` in `.env`. The CA file should be the TiDB Cloud CA certificate; see
+[certs/README.md](certs/README.md).
+
+## Database setup
+
+Copy `.env.example` to `.env`, fill in the database values, then apply the
+migrations in order. Migration 003 marks generated orders so the clear
+endpoint cannot delete real orders. `database/schema.sql` is a reference
+schema for a fresh database; do not run it together with migrations 001–003,
+because it already contains `orders.is_simulated`.
+
+```powershell
+npm.cmd run db:migrate
+npm.cmd run db:migrate:routing
+npm.cmd run db:migrate:simulation
+npm.cmd run db:migrate:cost-formula
+npx.cmd tsx scripts/run-sql.ts database/migrations/005_order_route_geometry.sql
+npm.cmd run db:init-settings
+```
+
+To remove the unused nullable timestamps from an existing database, run
+`npm.cmd run db:migrate:remove-unused-columns`. The migration checks that each
+target column contains only `NULL` values before dropping it and skips columns
+that are already absent.
+
+Apply the account migration once before deploying the login UI. It checks existing columns, so it also works on databases that already have `admin_users` and `riders.password_hash`:
+
+```powershell
+npm.cmd run db:migrate:accounts
+npm.cmd run db:create-owner
+```
+
+`db:create-owner` prompts for the username and password without echoing either value. It refuses to overwrite an existing owner. Passwords are bcrypt hashes at cost 10; plaintext passwords are not written to the repository. The account migration gives existing riders a unique `rider_<id>` username. The owner can change it from the rider management page and set a rider's initial password there; riders can change their own password after login. Numeric rider IDs remain accepted during the UI rollout. Account or password changes revoke existing rider sessions.
+
+All customer, order, route-plan, rider-management and settings endpoints require an owner session. Rider job endpoints require a rider session. Sessions expire after 12 hours. Deploy backend and frontend together after running the migration; an old frontend cannot call the newly protected API.
+
+`npm.cmd run db:prune-drafts` previews generated/rejected plans older than 30 days. `npm.cmd run db:prune-drafts -- --apply` deletes only those drafts. Selected plans are excluded, and plans with completed deliveries cannot be deleted through the API. Delivery records are stored in `delivery_jobs` and `delivery_job_orders`.
+
+`CORS_ORIGIN` accepts a comma-separated allowlist. If the database provider
+requires a CA certificate, use `DB_SSL_CA` for Vercel (PEM text, optionally
+with `\\n`) or `DB_SSL_CA_PATH` for a local certificate file.
+
+## Deploy to Vercel
+
+### Review fixes: database migration
+
+The revised backend requires `route_plans.input_snapshot`. Before starting it
+against an existing database, back up the database, pause application writes,
+verify the target `DB_*` environment, and run the earlier migrations above first:
+
+```powershell
+npm.cmd run db:migrate:review
+```
+
+This command adds plan input snapshots, unique customer/rider phone constraints,
+and prevents deleting riders referenced by jobs. Duplicate phone numbers stop
+the command before schema changes; resolve duplicates explicitly without losing
+customer history. DDL is not atomic: if a later step fails, fix the cause and
+rerun the command, which checks existing columns, indexes, and constraints.
+
+The foreign key step requires `REFERENCES` permission on `riders`. If that step
+is denied, snapshots and draft invalidation have already committed; the command
+still fails to flag the incomplete constraint. Grant the required permission
+and rerun the same command to finish it.
+
+Legacy selected plans receive a baseline of currently stored customer and shop
+data. Original historical inputs cannot be reconstructed; this baseline does
+not prove that old geometry matches those inputs. Legacy generated drafts are
+rejected and must be recalculated. New plans retain their original inputs and
+are checked again before selection. Unit tests mock the database; this migration
+still needs verification against a disposable MySQL/TiDB database before production.
+
+No custom `vercel.json` is needed. `src/app.ts` exports the Express app as the
+default export for Vercel, while `src/server.ts` remains the local port
+listener.
+
+When importing the repository in Vercel:
+
+1. Set **Root Directory** to `BackEnd/smart-lunch-routing-backend`.
+2. Leave Framework Preset, Build Command, and Output Directory on automatic
+   detection. Node.js 20+ is declared in `package.json`.
+3. Add all `DB_*` values and `CORS_ORIGIN` to Production and Preview as needed.
+4. Apply migrations from a trusted local/admin environment before sending
+   traffic to the deployment. Do not run migrations inside an API request.
+5. Verify `GET /api/health`, then log in and call a DB-backed endpoint with the returned bearer token.
+
+For CLI deployment, run from this backend directory after signing in:
+
+```powershell
+npx.cmd vercel
+npx.cmd vercel --prod
+```
+
 ## Authoritative business rules
+
+### Dispatch rounds and rider acknowledgment
+
+- Generate accepts optional `startTime`, `deadline`, and a nonempty `orderIds` list of pending orders for that date. Omit `orderIds` to plan all pending orders. Orders outside an explicit batch remain pending for another round.
+- Available riders must be active, manually ready, have login credentials, and have no pending delivery in a selected plan. Assignment preference is today's assigned order count, then last assignment time, then rider ID. It does not guarantee equal distance or earnings.
+- Selecting a draft accepts an optional complete `assignments: [{jobId, riderId}]` mapping. Repeated riders, foreign jobs, changed inputs, or newly busy riders are rejected. The shop transaction lock serializes confirmation; disjoint rounds can coexist on the same date.
+- Rider endpoints `POST /api/my-jobs/:jobId/acknowledge` and `/start` require the assigned rider's identity. Acknowledgment is required before starting or recording delivery. Completed jobs cannot restart.
+- `stopServiceMinutes` is an integer from 0 to 30, default 0. Each stop's service time contributes to route duration, subsequent ETA, and deadline feasibility. Round windows and original shop settings are preserved in the input snapshot.
+
+For an existing database, finish the account and review migrations first, then run from this directory against the intended database:
+
+```powershell
+npm.cmd run db:migrate:dispatch
+```
+
+This idempotent migration adds `delivery_jobs.acknowledged_at`, `delivery_jobs.assigned_at`, and `shop_settings.stop_service_minutes`. It rejects old GENERATED drafts without the new timing settings; recalculate them. Selected history is preserved and is not marked acknowledged automatically. Legacy assignment ordering falls back to job creation time because the original assignment time cannot be reconstructed. ALTER TABLE steps are not atomic; fix any reported error and rerun.
+
+Migration tests mock database calls. The dispatch migration has not yet been verified against a real MySQL/TiDB database or applied to production as part of these local changes.
 
 - Order: 1–3 boxes. Rider: at most 3 ORDERS (no box-capacity rule).
 - Start 11:30, deadline 12:30, fallback speed 30 km/h (all from `shop_settings`).
-- Revenue = boxes × 65, food = boxes × 40, rider delivery = 15 + 4 × routeKm,
-  profit = revenue − food − delivery.
+- Revenue = boxes × 65, food = boxes × 40, rider delivery per job
+  = 15 + 2 × routeKm × boxes in job, profit = revenue − food − delivery.
 - Haversine = approximate straight-line fallback; OSRM = preferred road source
   (Leaflet + OpenStreetMap render the map; no Google APIs).
 
@@ -143,10 +278,10 @@ Without DB credentials, DB-backed routes answer 503; bad `planDate` answers
 - Grouping limit of 3 orders/rider preserved as `MAX_ORDERS_PER_RIDER`
   (orders only — no box-capacity rule exists).
 - Cost/deadline values sourced from `shop_settings`
-  (65/40 THB, 15 + 4×km, 11:30→12:30, 30 km/h).
+  (65/40 THB, 15 + 2×km×boxes, 11:30→12:30, 30 km/h).
 
 ## Open TODOs
 
-Aiven credentials + live verification, live OSRM verification (unit tests
-mock HTTP), richer alternative-plan strategies, rider job page. See code
+Legacy migration notes, live OSRM verification (unit tests mock HTTP), richer alternative-plan strategies. See code
 `TODO` comments and `docs/routing-pipeline.md`.
+
